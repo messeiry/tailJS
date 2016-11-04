@@ -1,37 +1,123 @@
 {
-  "root@10.10.10.50": [
+  "root@10.10.10.50":
+  [
     {
       "fileName": "/var/log/NodeJsTest",
       "fileDescription": "the first file",
-      "filter1": "error",
-      "timeStampRegex": "default:now",
-      "eventNameRegex": "default:CriticalSymptom",
-      "elementNameRegex": "default:10.10.10.50",
-      "instanceNameRegex": "default:CRM_ApplicationService",
-      "classNameRegex": "default:SoftwareService",
-      "severityRegex": "default:Critical"
-    },
-    {
-      "fileName": "/opt/InCharge/SAM/smarts/local/logs/SAM-AGGR_en_US_UTF-8.log",
-      "fileDescription": "Smarts SAM-AGGR Log File",
-      "filter1": "",
-      "timeStampRegex": "default:now",
-      "eventNameRegex": "default:NormalLogMessage",
-      "elementNameRegex": "default:10.10.10.50",
-      "instanceNameRegex": "default:SAM_AGGR",
-      "classNameRegex": "default:SoftwareService",
-      "severityRegex": "default:Critical"
+      "GlobalFilterRegex": ".*?",
+      "EventMap":
+      [
+        {
+          "filterName"  : "filter_Error",
+          "filterRegex" : "error",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:CriticalSymptom",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "default:CRM_ApplicationService",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical"
+        },
+        {
+          "filterName"  : "filter_URL",
+          "filterRegex" : "url",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:CriticalSymptom",
+          "elementNameRegex": "'(.*?)'",
+          "instanceNameRegex": "default:CRM_ApplicationService",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical"
+        },
+        {
+          "filterName"  : "filter_Critical",
+          "filterRegex" : "Not Error",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:CriticalSymptom",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "default:CRM_ApplicationService",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical"
+        }
+      ]
     },
     {
       "fileName": "/var/log/NodeJsTest2",
-      "fileDescription": "the Second file",
-      "filter1": "ORA-",
-      "timeStampRegex": "default:now",
-      "eventNameRegex": "('(.*?)')",
-      "elementNameRegex": "",
-      "instanceNameRegex": "",
-      "classNameRegex": "",
-      "severityRegex": ""
+      "fileDescription": "the first file",
+      "GlobalFilterRegex": ".*?",
+      "EventMap":
+      [
+        {
+          "filterName"  : "filter_Error",
+          "filterRegex" : "error",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:CriticalSymptom",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "default:CRM_ApplicationService",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical"
+        },
+        {
+          "filterName"  : "filter_URL",
+          "filterRegex" : "url",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:CriticalSymptom",
+          "elementNameRegex": "'(.*?)'",
+          "instanceNameRegex": "default:CRM_ApplicationService",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical"
+        },
+        {
+          "filterName"  : "filter_Critical",
+          "filterRegex" : "Not Error",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:CriticalSymptom",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "default:CRM_ApplicationService",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical"
+        }
+      ]
+    }
+  ],
+  "root@10.10.10.51":
+  [
+    {
+      "fileName": "/var/log/NodeJsTest",
+      "fileDescription": "the first file",
+      "GlobalFilterRegex": ".*?",
+      "EventMap":
+      [
+        {
+          "filterName"  : "filter_Error",
+          "filterRegex" : "error",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:CriticalSymptom",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "default:CRM_ApplicationService",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical"
+        },
+        {
+          "filterName"  : "filter_URL",
+          "filterRegex" : "url",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:CriticalSymptom",
+          "elementNameRegex": "'(.*?)'",
+          "instanceNameRegex": "default:CRM_ApplicationService",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical"
+        },
+        {
+          "filterName"  : "filter_Critical",
+          "filterRegex" : "Not Error",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:CriticalSymptom",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "default:CRM_ApplicationService",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical"
+        }
+      ]
     }
   ]
+
 }

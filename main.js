@@ -1,185 +1,305 @@
 var cproc = require('child_process');
 var spawn = cproc.spawn;
-
+var snmp = require ("net-snmp");
 var fs = require('fs');
+
 var confFile = fs.readFileSync("conf.json");
 var conf = JSON.parse(confFile);
 
+
+/*
+* SNMP Trap Generator
+*/
+var enableTrapSend = true;
+var enableConsoleLog = true;
+
+var snmpTrapServer = "10.10.10.50";
+var snmpCommunity = "public";
+var enterpriseOid = "1.3.6.1.4.1.2000.0.0.7.1";
+var options = {
+    port: 161,
+    retries: 1,
+    timeout: 5000,
+    transport: "udp4",
+    trapPort: 162,
+    version: snmp.Version2c
+};
+
+/*
+loop for every entry in the conf.json file
+each entry is for a server in the foirmate User@ServerIP
+then another nested loop for the nested log files within a server. this process is where a process is created to listen to log files.
+the command used in listening to processes is the same for all the files.
+ */
+
 for (var key in conf) {
-    console.log(">> " + key);
+
+    //console.log(">>logServer:   " + key);
     for (var i=0; i < conf[key].length; i++) {
         var fileName = conf[key][i]['fileName'];
         var fileDescription = conf[key][i]['fileDescription'];
         var commandargs = "";
-        var child = spawn("ssh",  [key, "tail -n 1 -F ", fileName, commandargs]);
-        getProcessStdout(child);
+        var child = spawn("ssh",  [key, "tailf -n 1", fileName, commandargs]);
 
+        //console.log("Listening to : " + fileName);
+        //console.log("Process Created >>" + child.pid);
 
+        ParseRecievedLog(child);
 
     }
 
 }
 
-function getProcessStdout(child) {
-    child.stdout.on('data', function(data) {
 
-        console.log(child.pid);
-        //console.log("Recieved Log Entry: " + child.pid + ">>" + child.spawnargs[1] + child.spawnargs[3]+ ">> " + data);
+function ParseRecievedLog(child){
+        child.stdout.on('data', function(data) {
 
-        //console.log("... the record from JSON file: " + conf[child.spawnargs[1]]);
-        for (i=0; i< conf[child.spawnargs[1]].length; i++) {
+            var serverInProcess = child.spawnargs[1].toString();
+            var childProcesID = child.pid.toString();
+            var fileInProcess = child.spawnargs[3].toString();
 
-            if (child.spawnargs[3] === conf[child.spawnargs[1]][i]["fileName"]) {
-                var filter1 = conf[child.spawnargs[1]][i]["filter1"];
-                var timeStampRegex = conf[child.spawnargs[1]][i]["timeStampRegex"];
-                var eventNameRegex = conf[child.spawnargs[1]][i]["eventNameRegex"];
-                var elementNameRegex = conf[child.spawnargs[1]][i]["elementNameRegex"];
-                var instanceNameRegex = conf[child.spawnargs[1]][i]["instanceNameRegex"];
-                var classNameRegex = conf[child.spawnargs[1]][i]["classNameRegex"];
-                var severityRegex = conf[child.spawnargs[1]][i]["severityRegex"];
-                var timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue= "";
+            // loop in all log files of teh same server and stop at the log file where a process id is receiving a message
+            for (i=0; i< conf[serverInProcess].length; i++) {
+                if (fileInProcess === conf[serverInProcess][i]["fileName"]) {
+                    // extract the configuration for mapping the messages in this file
 
-                //console.log(filter1);
-                if (data.toString().includes(filter1)) {
+                    var GlobalFilterRegex = new RegExp(conf[serverInProcess][i]["GlobalFilterRegex"], "g");
+                    var EventMap =  conf[serverInProcess][i]["EventMap"];
 
-                    if (timeStampRegex != "" && timeStampRegex.startsWith("default:")) {
-                        timeStampValue =  new Date().toLocaleString();
-                    } else {
-                        //console.log("Applying regex for timestamp");
+                    // exclude all notification that is not matching the GlobalRegex
+                    if (GlobalFilterRegex.test(data)) {
+                        // only executes when a GlobalRegex is matching the data comming.
+                        //console.log("Recieved Log Message from server matching Global RegEx=" + serverInProcess + "\t processID = " + childProcesID + "\t from logfile:" + fileInProcess + "\n" + data);
+                        Evaluatemessage(data, EventMap, fileInProcess, childProcesID, serverInProcess);
                     }
-
-                    if (eventNameRegex != "" && eventNameRegex.startsWith("default:")) {
-                        eventNameValue = eventNameRegex.replace("default:","");
-                    } else {
-                        //console.log(eventNameRegex);
-                        var str ="playVideo(url1) BREAK playVideo('url2') BREAK playVideo('url3')";
-                        var re = new RegExp(eventNameRegex);
-
-                        eventNameValue = re.exec(data)[1].replace("'",'').replace("'","");
-
-                        //console.log(new RegExp(eventNameRegex).exec(str)[1]);
-                    }
-
-                    if (elementNameRegex != "" && elementNameRegex.startsWith("default:")) {
-                        elementNameValue = elementNameRegex.replace("default:","");
-                    } else {
-                        //console.log("Applying regex for timestamp");
-                    }
-
-                    if (instanceNameRegex != "" && instanceNameRegex.startsWith("default:")) {
-                        instanceNameValue = instanceNameRegex.replace("default:","");
-                    } else {
-                        //console.log("Applying regex for timestamp");
-                    }
-
-                    if (classNameRegex != "" && classNameRegex.startsWith("default:")) {
-                        classNameValue = classNameRegex.replace("default:","");
-                    } else {
-                        //console.log("Applying regex for timestamp");
-                    }
-
-
-                    if (severityRegex != "" && severityRegex.startsWith("default:")) {
-                        severityValue = severityRegex.replace("default:","");
-                    } else {
-                        //console.log("Applying regex for timestamp");
-                    }
-
-                    console.log("\nRecieved Log Entry: " + child.pid + ">>" + child.spawnargs[1] + child.spawnargs[3]+ ">> " + data);
-                    //console.log("Event Creation:");
-                    console.log("--- TimeStamp: " + timeStampValue);
-                    console.log("--- EventName: " + eventNameValue);
-                    console.log("--- ElementName: " + elementNameValue);
-                    console.log("--- InstanceName: " + instanceNameValue);
-                    console.log("--- ClassName: " + classNameValue);
-                    console.log("--- SeverityName: " + severityValue);
-                    console.log("--- EventText: " + data.toString().replace("\n",""));
-
                 }
 
             }
+
+
+
+        });
+}
+
+
+function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess) {
+    for (var i=0; i< EventMap.length; i++) {
+        filterName = EventMap[i]["filterName"];
+        filterRegex = EventMap[i]["filterRegex"];
+        timeStampRegex = EventMap[i]["timeStampRegex"];
+        eventNameRegex = EventMap[i]["eventNameRegex"];
+        elementNameRegex= EventMap[i]["elementNameRegex"];
+        instanceNameRegex= EventMap[i]["instanceNameRegex"];
+        classNameRegex= EventMap[i]["classNameRegex"];
+        severityRegex= EventMap[i]["severityRegex"];
+        var timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue = "";
+
+        // if the message is matching the regex then its gonna be parsed and will create a notification
+        if (new RegExp(filterRegex).test(msg)) {
+
+            if (timeStampValue === "") {
+                timeStampValue = new Date().toLocaleString();
+            } else {
+                if (timeStampRegex.startsWith("default:")) {
+                    timeStampValue = new Date().toLocaleString();
+                } else {
+                    match = new RegExp(timeStampRegex,"g").exec(msg);
+                    if (match !== null) {
+                        timeStampValue = match[1];
+                    } else {
+                        timeStampValue = new Date().toLocaleString();
+                    }
+                }
+            }
+
+            if (eventNameValue === "") {
+                eventNameValue = "default";
+            } else {
+                if (eventNameRegex.startsWith("default:")) {
+                    eventNameValue = eventNameRegex.replace("default:","");
+                } else {
+                    match = new RegExp(eventNameRegex,"g").exec(msg);
+                    if (match !== null) {
+                        eventNameValue = match[1];
+                    } else {
+                        eventNameValue = "default";
+                    }
+                }
+            }
+
+            if (elementNameValue === "") {
+                elementNameValue = "default";
+            } else {
+                if (elementNameRegex.startsWith("default:")) {
+                    elementNameValue = elementNameRegex.replace("default:","");
+                } else {
+                    match = new RegExp(elementNameRegex,"g").exec(msg);
+                    if (match !== null) {
+                        elementNameValue = match[1];
+                    } else {
+                        elementNameValue = "default";
+                    }
+                }
+            }
+
+
+            if (instanceNameValue === "") {
+                instanceNameValue = "default";
+            } else {
+                if (instanceNameRegex.startsWith("default:")) {
+                    instanceNameValue = instanceNameRegex.replace("default:","");
+                } else {
+                    match = new RegExp(instanceNameRegex,"g").exec(msg);
+                    if (match !== null) {
+                        instanceNameValue = match[1];
+                    } else {
+                        instanceNameValue = "default";
+                    }
+                }
+            }
+
+
+            if (classNameValue === "") {
+                classNameValue = "default";
+            } else {
+                if (classNameRegex.startsWith("default:")) {
+                    classNameValue = classNameRegex.replace("default:","");
+                } else {
+                    match = new RegExp(classNameRegex,"g").exec(msg);
+                    if (match !== null) {
+                        classNameValue = match[1];
+                    } else {
+                        classNameValue = "default";
+                    }
+                }
+            }
+
+
+            if (severityValue === "") {
+                severityValue = "default";
+            } else {
+                if (severityRegex.startsWith("default:")) {
+                    severityValue = severityRegex.replace("default:","");
+                } else {
+                    match = new RegExp(severityRegex,"g").exec(msg);
+                    if (match !== null) {
+                        severityValue = match[1];
+                    } else {
+                        severityValue = "default";
+                    }
+                }
+            }
+
+
+
+            msg = msg.toString().replace(/\n/g, "");
+
+            if (enableConsoleLog) {
+
+                log("<--- Notification Recieved ---<");
+                log("---- TimeStamp: \t" + timeStampValue);
+                log("---- EventName: \t" + eventNameValue);
+                log("---- ElementName: \t" + elementNameValue);
+                log("---- InstanceName: \t" + instanceNameValue);
+                log("---- ClassName: \t" + classNameValue);
+                log("---- SeverityName: \t" + severityValue);
+                log("---- EventSource: \t" + serverInProcess);
+                log("---- filterName: \t" + filterName);
+                log("---- logFile: \t" + source);
+                log("---- OS Process: \t" + childProcessID);
+                log("---- EventText: \t" + msg );
+            }
+            if (enableTrapSend) {
+                sendSNMPTrap(timeStampValue, eventNameValue,elementNameValue,instanceNameValue,classNameValue,severityValue,source,msg, filterName, serverInProcess);
+            }
+
+
+            // the Break is to get the first match in the filters only
+            break;
+
         }
 
 
-
-    });
+    }
 }
 
 
 
 
 
+function sendSNMPTrap(timeStampValue, eventNameValue,elementNameValue,instanceNameValue,classNameValue,severityValue,source,msg, filterName, serverInProcess) {
+    // combining the varbindsl of the trap from JSON array
+    var varbinds = [
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.1",
+            type: snmp.ObjectType.OctetString,
+            value: timeStampValue
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.2",
+            type: snmp.ObjectType.OctetString,
+            value: eventNameValue
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.3",
+            type: snmp.ObjectType.OctetString,
+            value: elementNameValue
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.4",
+            type: snmp.ObjectType.OctetString,
+            value: instanceNameValue
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.5",
+            type: snmp.ObjectType.OctetString,
+            value: classNameValue
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.6",
+            type: snmp.ObjectType.OctetString,
+            value: severityValue
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.7",
+            type: snmp.ObjectType.OctetString,
+            value: msg
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.8",
+            type: snmp.ObjectType.OctetString,
+            value: serverInProcess
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.9",
+            type: snmp.ObjectType.OctetString,
+            value: filterName
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.10",
+            type: snmp.ObjectType.OctetString,
+            value: source
+        }
+
+    ];
+
+
+
+    var session = snmp.createSession(snmpTrapServer,snmpCommunity,options)
+    session.trap (enterpriseOid, varbinds,
+        function (error) {
+            if (error)
+                console.error (error);
+        });
+    log("----> SNMP Trap Sent to " + snmpTrapServer);
+}
+
+
+
+function log(msg) {
+    console.log(new Date().toLocaleString() + " : " + msg);
+}
 
 
 
 
-
-
-/* NOTES Section */
-
-/*
-
-var str ="playVideo('url1') BREAK playVideo('url2') BREAK playVideo('url3')";
-
-         /('(.*?)')g/
-var re = /\('(.*?)'\)/g;
-console.log(re.exec(str)[1]);
-//while (match = re.exec(str)) {
-//    console.log(match[1]);
-//}
-
-
-
-
- {
- "root@10.10.10.50"  : [
- {"fileName": "/var/log/NodeJsTest", "fileDescription" : "the first file"},
- {"fileName": "/var/log/NodeJsTest2", "fileDescription" : "the Second file"}
- ],
- "root@10.10.10.51"  : [
- {"fileName": "/var/log/NodeJsTest", "fileDescription" : "the first file"},
- {"fileName": "/var/log/NodeJsTest2", "fileDescription" : "the Second file"}
- ]
- }
-
-*/
-
-/*
-* Basic Program
- var cproc = require('child_process');
- var exec = cproc.exec;
- var spawn = cproc.spawn;
-
- var command = "ssh";
- var args = ["root@10.10.10.50", "tail -n 1 -F /var/log/NodeJsTest"];
- var child = spawn(command, args);
-
- child.stdout.on('data', function(data) {
- console.log("DATA >> " + data);
- });
-
-
-
- console.log("---- All Programs Now Listening to Log Files ------");
-
- child.stderr.on('data', function(data) {
- console.log('stderr: ' + data);
- });
-
- child.on('close', function(code) {
- console.log('exit code: ' + code);
- process.exit();
- });
-*
-* */
-
-
-/*
- var command2 = "ssh";
- var args2 = ["root@10.10.10.50", "tail -n 1 -F /var/log/NodeJsTest2"];
- var child2 = spawn(command2, args2);
- child2.stdout.on('data', function(data2) {
- //console.log('stdout: ' + data);
- console.log('Second File Log: ' + data2);
- });
-*/
