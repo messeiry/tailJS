@@ -1,4 +1,6 @@
 # tailJS
+Developed and Designed by : Mohamed ELMesseiry @ 2016
+                            m.messeiry@gmail.com
 
 the code below can read a configuration file that contains a list of log files on remote Linux / Unix Servers. we tail remotely those files and when changes happen we use the configuration in the file to to extract notifications parameters from teh log entries or even set default values for different fields.
 

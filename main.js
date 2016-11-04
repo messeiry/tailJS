@@ -1,3 +1,6 @@
+//  Developed and Designed by : Mohamed ELMesseiry @ 2016
+//  m.messeiry@gmail.com
+
 var cproc = require('child_process');
 var spawn = cproc.spawn;
 var snmp = require ("net-snmp");
