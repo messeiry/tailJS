@@ -2,8 +2,9 @@
   "root@10.10.10.50":
   [
     {
-      "fileName": "/var/log/NodeJsTest",
-      "fileDescription": "the first file",
+      "fileName": "/var/log/SmartsSamplelogs.log",
+      "fileDescription": "EMC Smarts logs",
+      "logFormateRegex": "(\\[\\w+ \\d*, \\d{1,4} \\d*:\\d*:\\d* \\w+ \\w+ \\W\\w+]) ([^\\[]*)",
       "GlobalFilterRegex": ".*?",
       "EventMap":
       [
@@ -13,6 +14,17 @@
           "timeStampRegex": "default:now",
           "eventNameRegex": "default:CriticalSymptom",
           "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "default:CRM_ApplicationService",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical"
+        },
+
+        {
+          "filterName"  : "filter_messi",
+          "filterRegex" : "messi",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:MinorSymptom",
+          "elementNameRegex": "default:MesseiryTestLab",
           "instanceNameRegex": "default:CRM_ApplicationService",
           "classNameRegex": "default:SoftwareService",
           "severityRegex": "default:Critical"
@@ -42,52 +54,12 @@
     {
       "fileName": "/var/log/NodeJsTest2",
       "fileDescription": "the first file",
+      "logFormateRegex": "(\\[\\w+ \\d*, \\d{1,4} \\d*:\\d*:\\d* \\w+ \\w+ \\W\\w+]) ([^\\[]*)",
       "GlobalFilterRegex": ".*?",
       "EventMap":
       [
         {
-          "filterName"  : "filter_Error",
-          "filterRegex" : "error",
-          "timeStampRegex": "default:now",
-          "eventNameRegex": "default:CriticalSymptom",
-          "elementNameRegex": "default:10.10.10.50",
-          "instanceNameRegex": "default:CRM_ApplicationService",
-          "classNameRegex": "default:SoftwareService",
-          "severityRegex": "default:Critical"
-        },
-        {
-          "filterName"  : "filter_URL",
-          "filterRegex" : "url",
-          "timeStampRegex": "default:now",
-          "eventNameRegex": "default:CriticalSymptom",
-          "elementNameRegex": "'(.*?)'",
-          "instanceNameRegex": "default:CRM_ApplicationService",
-          "classNameRegex": "default:SoftwareService",
-          "severityRegex": "default:Critical"
-        },
-        {
-          "filterName"  : "filter_Critical",
-          "filterRegex" : "Not Error",
-          "timeStampRegex": "default:now",
-          "eventNameRegex": "default:CriticalSymptom",
-          "elementNameRegex": "default:10.10.10.50",
-          "instanceNameRegex": "default:CRM_ApplicationService",
-          "classNameRegex": "default:SoftwareService",
-          "severityRegex": "default:Critical"
-        }
-      ]
-    }
-  ],
-  "root@10.10.10.51":
-  [
-    {
-      "fileName": "/var/log/NodeJsTest",
-      "fileDescription": "the first file",
-      "GlobalFilterRegex": ".*?",
-      "EventMap":
-      [
-        {
-          "filterName"  : "filter_Error",
+          "filterName"  : "filter_Error2",
           "filterRegex" : "error",
           "timeStampRegex": "default:now",
           "eventNameRegex": "default:CriticalSymptom",
@@ -119,5 +91,4 @@
       ]
     }
   ]
-
 }

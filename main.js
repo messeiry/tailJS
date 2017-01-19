@@ -33,6 +33,10 @@ loop for every entry in the conf.json file
 each entry is for a server in the foirmate User@ServerIP
 then another nested loop for the nested log files within a server. this process is where a process is created to listen to log files.
 the command used in listening to processes is the same for all the files.
+
+ tailf -n1  $(ls -t /var/log/NodeJsTest2* | head -n1) | awk '$1=$1' ORS=' ' | grep --line-buffered 'Welcome'
+ tailf -n 1 $(ls -t /var/log/NodeJsTest2* | head -n1)
+
  */
 
 for (var key in conf) {
@@ -41,8 +45,9 @@ for (var key in conf) {
     for (var i=0; i < conf[key].length; i++) {
         var fileName = conf[key][i]['fileName'];
         var fileDescription = conf[key][i]['fileDescription'];
-        var commandargs = "";
-        var child = spawn("ssh",  [key, "tailf -n 1", fileName, commandargs]);
+        var logFormateRegex = conf[key][i]['logFormateRegex'];;
+        var commandargs = '';
+        var child = spawn("ssh",  [key, "tailf -n 1", fileName ,commandargs]);
 
         //console.log("Listening to : " + fileName);
         //console.log("Process Created >>" + child.pid);
@@ -73,29 +78,78 @@ function ParseRecievedLog(child){
                     if (GlobalFilterRegex.test(data)) {
                         // only executes when a GlobalRegex is matching the data comming.
                         //console.log("Recieved Log Message from server matching Global RegEx=" + serverInProcess + "\t processID = " + childProcesID + "\t from logfile:" + fileInProcess + "\n" + data);
-                        Evaluatemessage(data, EventMap, fileInProcess, childProcesID, serverInProcess);
+
+                        DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serverInProcess, logFormateRegex);
+                        // Commented to handle multiple lines
+                        //Evaluatemessage(data, EventMap, fileInProcess, childProcesID, serverInProcess);
                     }
                 }
 
             }
 
-
-
         });
 }
 
 
+
+/*
+    * DetectBatchMessages is an evaluator that detect batch messages based on a regex, if the log message occures as a result of regex matching multiople times that means its a batch,
+    * the regex is different from one log file to another so it needs to be re-evaluated for each case.
+    *
+ */
+function DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serverInProcess, logFormateRegex) {
+    // the below line means we will use strict mode to be able to run es6 js other wise we will have to run the whole app in strict mode like this nodejs --use_strict main.js
+
+    "use strict";
+    //var regex = /(\[\w+ \d*, \d{1,4} \d*:\d*:\d* \w+ \w+ \W\w+]) ([^\[]*)/g;
+    var regex = new RegExp(logFormateRegex, "g");
+    //regex = logFormateRegex;
+    //console.log(regex);
+
+
+    let m;
+
+    while ((m = regex.exec(data)) !== null) {
+        // This is necessary to avoid infinite loops with zero-width matches
+        if (m.index === regex.lastIndex) {
+            regex.lastIndex++;
+        }
+
+        // The result can be accessed through the `m`-variable.
+        m.forEach((match, groupIndex) => {
+            if (groupIndex === 0) {
+                //console.log(groupIndex, match);
+                Evaluatemessage(match, EventMap, fileInProcess, childProcesID, serverInProcess);
+            }
+            //console.log(`Found match, group ${groupIndex}: ${match}`);
+        });
+    }
+
+
+}
+
 function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess) {
-    for (var i=0; i< EventMap.length; i++) {
+    var instanceNameRegex;
+    var severityRegex;
+    var severityRegex;
+    var classNameRegex;
+    var elementNameRegex;
+    var filterName;
+    var filterRegex;
+    var timeStampRegex;
+    var eventNameRegex;
+    for (var i = 0; i < EventMap.length; i++) {
         filterName = EventMap[i]["filterName"];
         filterRegex = EventMap[i]["filterRegex"];
         timeStampRegex = EventMap[i]["timeStampRegex"];
         eventNameRegex = EventMap[i]["eventNameRegex"];
-        elementNameRegex= EventMap[i]["elementNameRegex"];
-        instanceNameRegex= EventMap[i]["instanceNameRegex"];
-        classNameRegex= EventMap[i]["classNameRegex"];
-        severityRegex= EventMap[i]["severityRegex"];
+        elementNameRegex = EventMap[i]["elementNameRegex"];
+        instanceNameRegex = EventMap[i]["instanceNameRegex"];
+        classNameRegex = EventMap[i]["classNameRegex"];
+        severityRegex = EventMap[i]["severityRegex"];
         var timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue = "";
+
+        msg = msg.toString().replace(/\n/g, "");
 
         // if the message is matching the regex then its gonna be parsed and will create a notification
         if (new RegExp(filterRegex).test(msg)) {
@@ -106,7 +160,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 if (timeStampRegex.startsWith("default:")) {
                     timeStampValue = new Date().toLocaleString();
                 } else {
-                    match = new RegExp(timeStampRegex,"g").exec(msg);
+                    match = new RegExp(timeStampRegex, "g").exec(msg);
                     if (match !== null) {
                         timeStampValue = match[1];
                     } else {
@@ -119,9 +173,9 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 eventNameValue = "default";
             } else {
                 if (eventNameRegex.startsWith("default:")) {
-                    eventNameValue = eventNameRegex.replace("default:","");
+                    eventNameValue = eventNameRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(eventNameRegex,"g").exec(msg);
+                    match = new RegExp(eventNameRegex, "g").exec(msg);
                     if (match !== null) {
                         eventNameValue = match[1];
                     } else {
@@ -134,9 +188,9 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 elementNameValue = "default";
             } else {
                 if (elementNameRegex.startsWith("default:")) {
-                    elementNameValue = elementNameRegex.replace("default:","");
+                    elementNameValue = elementNameRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(elementNameRegex,"g").exec(msg);
+                    match = new RegExp(elementNameRegex, "g").exec(msg);
                     if (match !== null) {
                         elementNameValue = match[1];
                     } else {
@@ -150,9 +204,9 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 instanceNameValue = "default";
             } else {
                 if (instanceNameRegex.startsWith("default:")) {
-                    instanceNameValue = instanceNameRegex.replace("default:","");
+                    instanceNameValue = instanceNameRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(instanceNameRegex,"g").exec(msg);
+                    match = new RegExp(instanceNameRegex, "g").exec(msg);
                     if (match !== null) {
                         instanceNameValue = match[1];
                     } else {
@@ -166,9 +220,9 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 classNameValue = "default";
             } else {
                 if (classNameRegex.startsWith("default:")) {
-                    classNameValue = classNameRegex.replace("default:","");
+                    classNameValue = classNameRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(classNameRegex,"g").exec(msg);
+                    match = new RegExp(classNameRegex, "g").exec(msg);
                     if (match !== null) {
                         classNameValue = match[1];
                     } else {
@@ -182,9 +236,9 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 severityValue = "default";
             } else {
                 if (severityRegex.startsWith("default:")) {
-                    severityValue = severityRegex.replace("default:","");
+                    severityValue = severityRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(severityRegex,"g").exec(msg);
+                    match = new RegExp(severityRegex, "g").exec(msg);
                     if (match !== null) {
                         severityValue = match[1];
                     } else {
@@ -193,9 +247,6 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 }
             }
 
-
-
-            msg = msg.toString().replace(/\n/g, "");
 
             if (enableConsoleLog) {
 
@@ -210,10 +261,11 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 log("---- filterName: \t" + filterName);
                 log("---- logFile: \t" + source);
                 log("---- OS Process: \t" + childProcessID);
-                log("---- EventText: \t" + msg );
+                log("---- EventText: \t" + msg);
+                log("\n");
             }
             if (enableTrapSend) {
-                sendSNMPTrap(timeStampValue, eventNameValue,elementNameValue,instanceNameValue,classNameValue,severityValue,source,msg, filterName, serverInProcess);
+                sendSNMPTrap(timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue, source, msg, filterName, serverInProcess);
             }
 
 
@@ -225,8 +277,6 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
 
     }
 }
-
-
 
 
 
