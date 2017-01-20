@@ -45,21 +45,23 @@ for (var key in conf) {
     for (var i=0; i < conf[key].length; i++) {
         var fileName = conf[key][i]['fileName'];
         var fileDescription = conf[key][i]['fileDescription'];
-        var logFormateRegex = conf[key][i]['logFormateRegex'];;
+        var logFormateRegex = conf[key][i]['logFormateRegex'];
+        var logFormateScope = conf[key][i]['logFormateScope'];
+
         var commandargs = '';
         var child = spawn("ssh",  [key, "tailf -n 1", fileName ,commandargs]);
 
         //console.log("Listening to : " + fileName);
         //console.log("Process Created >>" + child.pid);
 
-        ParseRecievedLog(child);
+        ParseRecievedLog(child, logFormateRegex, logFormateScope);
 
     }
 
 }
 
 
-function ParseRecievedLog(child){
+function ParseRecievedLog(child, logFormateRegex, logFormateScope){
         child.stdout.on('data', function(data) {
 
             var serverInProcess = child.spawnargs[1].toString();
@@ -79,7 +81,7 @@ function ParseRecievedLog(child){
                         // only executes when a GlobalRegex is matching the data comming.
                         //console.log("Recieved Log Message from server matching Global RegEx=" + serverInProcess + "\t processID = " + childProcesID + "\t from logfile:" + fileInProcess + "\n" + data);
 
-                        DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serverInProcess, logFormateRegex);
+                        DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serverInProcess, logFormateRegex, logFormateScope);
                         // Commented to handle multiple lines
                         //Evaluatemessage(data, EventMap, fileInProcess, childProcesID, serverInProcess);
                     }
@@ -97,15 +99,16 @@ function ParseRecievedLog(child){
     * the regex is different from one log file to another so it needs to be re-evaluated for each case.
     *
  */
-function DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serverInProcess, logFormateRegex) {
+function DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serverInProcess, logFormateRegex, logFormateScope) {
     // the below line means we will use strict mode to be able to run es6 js other wise we will have to run the whole app in strict mode like this nodejs --use_strict main.js
-
     "use strict";
     //var regex = /(\[\w+ \d*, \d{1,4} \d*:\d*:\d* \w+ \w+ \W\w+]) ([^\[]*)/g;
-    var regex = new RegExp(logFormateRegex, "g");
-    //regex = logFormateRegex;
-    //console.log(regex);
 
+    console.log(data.toString());
+    console.log(logFormateRegex);
+    console.log(logFormateScope);
+
+    var regex = new RegExp(logFormateRegex, logFormateScope);
 
     let m;
 
