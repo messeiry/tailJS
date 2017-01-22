@@ -3,14 +3,14 @@
   [
     {
       "fileName": "/var/log/SmartsSamplelogs.log",
-      "fileDescription": "EMC Smarts logs",
+      "fileDescription": "EMC Smarts Logs Formate Sample",
       "logFormateRegex": "(\\[\\w+ \\d*, \\d{1,4} \\d*:\\d*:\\d* \\w+ \\w+ \\W\\w+]) ([^\\[]*)",
       "logFormateScope":"g",
       "GlobalFilterRegex": ".*?",
       "EventMap":
       [
         {
-          "filterName"  : "filter_Error",
+          "filterName"  : "filter_error",
           "filterRegex" : "error",
           "timeStampRegex": "default:now",
           "eventNameRegex": "default:CriticalSymptom",
@@ -19,7 +19,6 @@
           "classNameRegex": "default:SoftwareService",
           "severityRegex": "default:Critical"
         },
-
         {
           "filterName"  : "filter_messi",
           "filterRegex" : "messi",
@@ -39,22 +38,12 @@
           "instanceNameRegex": "default:CRM_ApplicationService",
           "classNameRegex": "default:SoftwareService",
           "severityRegex": "default:Critical"
-        },
-        {
-          "filterName"  : "filter_Critical",
-          "filterRegex" : "Not Error",
-          "timeStampRegex": "default:now",
-          "eventNameRegex": "default:CriticalSymptom",
-          "elementNameRegex": "default:10.10.10.50",
-          "instanceNameRegex": "default:CRM_ApplicationService",
-          "classNameRegex": "default:SoftwareService",
-          "severityRegex": "default:Critical"
         }
       ]
     },
     {
       "fileName": "/var/log/alert_ASM1.log",
-      "fileDescription": "the first file",
+      "fileDescription": "SEC33-E_ALERT_LOG_alert_ASM1",
       "logFormateRegex": "^([a-z]{1,3} [a-z]{1,3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} \\d{4})\r?\n(.*(?:\r?\n(?![a-z]{1,3} [a-z]{1,3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} \\d{4}).*)*)",
       "logFormateScope":"gmi",
       "GlobalFilterRegex": ".*?",
@@ -69,20 +58,50 @@
           "instanceNameRegex": "default:CRM_ApplicationService",
           "classNameRegex": "default:SoftwareService",
           "severityRegex": "default:Critical"
-        },
+        }
+      ]
+    },
+    {
+      "fileName": "/var/log/ICMS_ALEPO_PLYS_Alepo_err.log",
+      "fileDescription": "BEC12-ENCX-V43_ICMS_ALEPO_Alepo_err",
+      "logFormateRegex": "^(_\\d{1,8}_\\w+)\\s*(.*(?:\r?\n(?!_\\d{1,8}_\\w+).*)*)",
+      "logFormateScope":"gm",
+      "GlobalFilterRegex": ".*?",
+      "EventMap":
+      [
         {
-          "filterName"  : "filter_URL",
-          "filterRegex" : "url",
+          "filterName"  : "filter_ERROR_MQ_0006_connection_refused",
+          "filterRegex" : "Exception ServiceConnection",
           "timeStampRegex": "default:now",
           "eventNameRegex": "default:CriticalSymptom",
-          "elementNameRegex": "'(.*?)'",
+          "elementNameRegex": "default:10.10.10.50",
           "instanceNameRegex": "default:CRM_ApplicationService",
           "classNameRegex": "default:SoftwareService",
           "severityRegex": "default:Critical"
         },
+                {
+          "filterName"  : "filter_ERROR_MQ_0006_DCPSoapHandler",
+          "filterRegex" : "Exception DCPSoapHandler",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:CriticalSymptom",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "default:CRM_ApplicationService",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical"
+        }
+      ]
+    },
+    {
+      "fileName": "/var/log/alert_ARCDB.log",
+      "fileDescription": "alert_ARCDB_errors",
+      "logFormateRegex": "(\\w{1,3}\\s\\w{1,3}\\s\\s\\d\\s\\d{1,2}:\\d{1,2}:\\d{1,2}\\s\\d{1,4}\\s*(.*))",
+      "logFormateScope":"g",
+      "GlobalFilterRegex": ".*?",
+      "EventMap":
+      [
         {
-          "filterName"  : "filter_Critical",
-          "filterRegex" : "Not Error",
+          "filterName"  : "filter__advanced_to_seq",
+          "filterRegex" : "advanced to log sequence",
           "timeStampRegex": "default:now",
           "eventNameRegex": "default:CriticalSymptom",
           "elementNameRegex": "default:10.10.10.50",
@@ -92,5 +111,6 @@
         }
       ]
     }
+
   ]
 }

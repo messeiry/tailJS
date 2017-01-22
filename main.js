@@ -34,14 +34,18 @@ each entry is for a server in the foirmate User@ServerIP
 then another nested loop for the nested log files within a server. this process is where a process is created to listen to log files.
 the command used in listening to processes is the same for all the files.
 
- tailf -n1  $(ls -t /var/log/NodeJsTest2* | head -n1) | awk '$1=$1' ORS=' ' | grep --line-buffered 'Welcome'
- tailf -n 1 $(ls -t /var/log/NodeJsTest2* | head -n1)
+the following command should return the last changed files however when it's called from ssh directly it's returning an error accessing teh files. 
+tail -F -n 1 $(ls -t /var/log/NodeJsTest2* | head -n1)
+this will be skipped for now. we only need this option in case we need to pass wild card characters to get the lat log.
 
- */
+Note: using * in the fileName is not recommended and most probably will not work, the app is design to tail one single file at a time.
+*/
+
+
+
 
 for (var key in conf) {
-
-    //console.log(">>logServer:   " + key);
+    log("logServer:   " + key);
     for (var i=0; i < conf[key].length; i++) {
         var fileName = conf[key][i]['fileName'];
         var fileDescription = conf[key][i]['fileDescription'];
@@ -49,13 +53,11 @@ for (var key in conf) {
         var logFormateScope = conf[key][i]['logFormateScope'];
 
         var commandargs = '';
-        var child = spawn("ssh",  [key, "tailf -n 1", fileName ,commandargs]);
-
-        //console.log("Listening to : " + fileName);
-        //console.log("Process Created >>" + child.pid);
+        log("ssh " + key + " tail -F -n 1 " + fileName + " " + commandargs );
+        var child = spawn("ssh",  [key, "tail -F -n 1 ", fileName ,commandargs]);
+        log("Listening to : " + fileName + " Process Created with PID: " +  child.pid );
 
         ParseRecievedLog(child, logFormateRegex, logFormateScope);
-
     }
 
 }
@@ -102,11 +104,9 @@ function ParseRecievedLog(child, logFormateRegex, logFormateScope){
 function DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serverInProcess, logFormateRegex, logFormateScope) {
     // the below line means we will use strict mode to be able to run es6 js other wise we will have to run the whole app in strict mode like this nodejs --use_strict main.js
     "use strict";
-    //var regex = /(\[\w+ \d*, \d{1,4} \d*:\d*:\d* \w+ \w+ \W\w+]) ([^\[]*)/g;
-
-    console.log(data.toString());
-    console.log(logFormateRegex);
-    console.log(logFormateScope);
+    //console.log(data.toString());
+    //console.log(logFormateRegex);
+    //console.log(logFormateScope);
 
     var regex = new RegExp(logFormateRegex, logFormateScope);
 
