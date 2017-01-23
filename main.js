@@ -53,6 +53,19 @@ for (var key in conf) {
             var logFormateScope = conf[key][i]['OutputEntryFormatScope'];
             var command = conf[key][i]['command'];
 
+            // Process shortcut commands.
+            if(command.startsWith("tailFollow:")){
+                command = command.replace("tailFollow:", "tail -F -n 1")
+            }
+
+            if(command.startsWith("tailFollowLast:")){
+                path = command.replace("tailFollowLast:", "")
+                command = "tail -F -n 1 $(ls -t " + path + " | head -n1)";
+            }
+            // This rest of the code assumes that the two values are the same. So put it back in the JSON obj.
+            conf[key][i]['command'] = command;
+
+            // Spawn and listen.
             var commandargs = '';
             log("ssh " + key + " " + command + " " + commandargs );
             var child = spawn("ssh",  [key, command]);
@@ -68,7 +81,7 @@ for (var key in conf) {
 
 }
 
-// Hack to keep running forever
+// Hack to keep running forever, this will be enhanced to handle the repition of execution needed for the scripts, so keep it like this for now.
 setTimeout(exitf = function(){ setTimeout(exitf, 99999999999999999); }, 99999999999999999);
 
 

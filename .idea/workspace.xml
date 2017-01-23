@@ -3,7 +3,9 @@
   <component name="ChangeListManager">
     <list default="true" id="fae7fed6-755b-4158-aa30-0cb76a55d514" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/conf.json" afterPath="$PROJECT_DIR$/conf.json" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/jsLibraryMappings.xml" afterPath="$PROJECT_DIR$/.idea/jsLibraryMappings.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main.js" afterPath="$PROJECT_DIR$/main.js" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/tailJS.iml" afterPath="$PROJECT_DIR$/.idea/tailJS.iml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="tailJS.iws" />
@@ -31,8 +33,8 @@
       <file leaf-file-name="main.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="10.942029">
-              <caret line="453" column="8" selection-start-line="453" selection-start-column="8" selection-end-line="453" selection-end-column="8" />
+            <state vertical-scroll-proportion="0.41062802">
+              <caret line="71" column="79" selection-start-line="71" selection-start-column="79" selection-end-line="71" selection-end-column="79" />
               <folding>
                 <element signature="n#!!doc" expanded="true" />
               </folding>
@@ -43,8 +45,8 @@
       <file leaf-file-name="conf.json" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/conf.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-3.125">
-              <caret line="5" column="34" selection-start-line="5" selection-start-column="34" selection-end-line="5" selection-end-column="34" />
+            <state vertical-scroll-proportion="-8.625">
+              <caret line="120" column="41" selection-start-line="120" selection-start-column="41" selection-end-line="120" selection-end-column="41" />
               <folding />
             </state>
           </provider>
@@ -62,8 +64,8 @@
         <option value="$PROJECT_DIR$/RegEx.js" />
         <option value="$PROJECT_DIR$/main_bkup.js" />
         <option value="$PROJECT_DIR$/README.md" />
-        <option value="$PROJECT_DIR$/main.js" />
         <option value="$PROJECT_DIR$/conf.json" />
+        <option value="$PROJECT_DIR$/main.js" />
       </list>
     </option>
   </component>
@@ -332,7 +334,13 @@
       <option name="project" value="LOCAL" />
       <updated>1485175830802</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Send userdefined 1 to 5 to SNMP">
+      <created>1485176112425</created>
+      <option name="number" value="00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1485176112425</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
@@ -397,7 +405,8 @@
     <MESSAGE value="Depends on a configurable command now instead of the hardcoded commands." />
     <MESSAGE value="sample test of Script/command monitoring working" />
     <MESSAGE value="Added support for userdefined 1 to 5 to allow more values to be sent" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added support for userdefined 1 to 5 to allow more values to be sent" />
+    <MESSAGE value="Send userdefined 1 to 5 to SNMP" />
+    <option name="LAST_COMMIT_MESSAGE" value="Send userdefined 1 to 5 to SNMP" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -537,16 +546,16 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/conf.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-3.125">
-          <caret line="5" column="34" selection-start-line="5" selection-start-column="34" selection-end-line="5" selection-end-column="34" />
+        <state vertical-scroll-proportion="-8.625">
+          <caret line="120" column="41" selection-start-line="120" selection-start-column="41" selection-end-line="120" selection-end-column="41" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/main.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="10.942029">
-          <caret line="453" column="8" selection-start-line="453" selection-start-column="8" selection-end-line="453" selection-end-column="8" />
+        <state vertical-scroll-proportion="0.41062802">
+          <caret line="71" column="79" selection-start-line="71" selection-start-column="79" selection-end-line="71" selection-end-column="79" />
           <folding>
             <element signature="n#!!doc" expanded="true" />
           </folding>
