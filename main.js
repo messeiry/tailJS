@@ -139,6 +139,12 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
     var filterRegex;
     var timeStampRegex;
     var eventNameRegex;
+    var userDefined1Regex;
+    var userDefined2Regex;
+    var userDefined3Regex;
+    var userDefined4Regex;
+    var userDefined5Regex;
+
     for (var i = 0; i < EventMap.length; i++) {
         filterName = EventMap[i]["filterName"];
         filterRegex = EventMap[i]["filterRegex"];
@@ -148,7 +154,14 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
         instanceNameRegex = EventMap[i]["instanceNameRegex"];
         classNameRegex = EventMap[i]["classNameRegex"];
         severityRegex = EventMap[i]["severityRegex"];
-        var timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue = "";
+
+        userDefined1Regex = EventMap[i]["userDefined1Regex"];
+        userDefined2Regex = EventMap[i]["userDefined2Regex"];
+        userDefined3Regex = EventMap[i]["userDefined3Regex"];
+        userDefined4Regex = EventMap[i]["userDefined4Regex"];
+        userDefined5Regex = EventMap[i]["userDefined5Regex"];
+
+        var timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue,userDefined1Value, userDefined2Value, userDefined3Value, userDefined4Value, userDefined5Value;
 
         //log(msg);
         msg = msg.toString().replace(/\n/g, "");
@@ -156,7 +169,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
         // if the message is matching the regex then its gonna be parsed and will create a notification
         if (new RegExp(filterRegex).test(msg)) {
 
-            if (timeStampValue === "") {
+            if (timeStampValue === "" || !timeStampRegex) {
                 timeStampValue = new Date().toLocaleString();
             } else {
                 if (timeStampRegex.startsWith("default:")) {
@@ -171,7 +184,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 }
             }
 
-            if (eventNameValue === "") {
+            if (eventNameValue === "" || !eventNameRegex) {
                 eventNameValue = "default";
             } else {
                 if (eventNameRegex.startsWith("default:")) {
@@ -186,7 +199,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 }
             }
 
-            if (elementNameValue === "") {
+            if (elementNameValue === "" || !elementNameRegex) {
                 elementNameValue = "default";
             } else {
                 if (elementNameRegex.startsWith("default:")) {
@@ -202,7 +215,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
             }
 
 
-            if (instanceNameValue === "") {
+            if (instanceNameValue === "" || !instanceNameRegex) {
                 instanceNameValue = "default";
             } else {
                 if (instanceNameRegex.startsWith("default:")) {
@@ -218,7 +231,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
             }
 
 
-            if (classNameValue === "") {
+            if (classNameValue === "" || !classNameRegex) {
                 classNameValue = "default";
             } else {
                 if (classNameRegex.startsWith("default:")) {
@@ -234,7 +247,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
             }
 
 
-            if (severityValue === "") {
+            if (severityValue === "" || !severityRegex) {
                 severityValue = "default";
             } else {
                 if (severityRegex.startsWith("default:")) {
@@ -245,6 +258,82 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                         severityValue = match[1];
                     } else {
                         severityValue = "default";
+                    }
+                }
+            }
+
+            // UserDefined vars
+            if (userDefined1Value === "" || !userDefined1Regex) {
+                userDefined1Value = "default";
+            } else {
+                if (userDefined1Regex.startsWith("default:")) {
+                    userDefined1Value = userDefined1Regex.replace("default:", "");
+                } else {
+                    match = new RegExp(userDefined1Regex, "g").exec(msg);
+                    if (match !== null) {
+                        userDefined1Value = match[1];
+                    } else {
+                        userDefined1Value = "default";
+                    }
+                }
+            }
+
+            if (userDefined2Value === "" || !userDefined2Regex) {
+                userDefined2Value = "default";
+            } else {
+                if (userDefined2Regex.startsWith("default:")) {
+                    userDefined2Value = userDefined2Regex.replace("default:", "");
+                } else {
+                    match = new RegExp(userDefined2Regex, "g").exec(msg);
+                    if (match !== null) {
+                        userDefined2Value = match[1];
+                    } else {
+                        userDefined2Value = "default";
+                    }
+                }
+            }
+
+            if (userDefined3Value === "" || !userDefined3Regex) {
+                userDefined3Value = "default";
+            } else {
+                if (userDefined3Regex.startsWith("default:")) {
+                    userDefined3Value = userDefined3Regex.replace("default:", "");
+                } else {
+                    match = new RegExp(userDefined3Regex, "g").exec(msg);
+                    if (match !== null) {
+                        userDefined3Value = match[1];
+                    } else {
+                        userDefined3Value = "default";
+                    }
+                }
+            }
+
+            if (userDefined4Value === "" || !userDefined4Regex) {
+                userDefined4Value = "default";
+            } else {
+                if (userDefined4Regex.startsWith("default:")) {
+                    userDefined4Value = userDefined4Regex.replace("default:", "");
+                } else {
+                    match = new RegExp(userDefined4Regex, "g").exec(msg);
+                    if (match !== null) {
+                        userDefined4Value = match[1];
+                    } else {
+                        userDefined4Value = "default";
+                    }
+                }
+            }
+
+            if (userDefined5Value === "" || !userDefined5Regex) {
+                userDefined5Value = "default";
+            } else {
+                if (userDefined5Regex.startsWith("default:")) {
+                    userDefined5Value = userDefined5Regex.replace("default:", "");
+                } else {
+                    match = new RegExp(userDefined5Regex, "g").exec(msg);
+                    if (match !== null) {
+                        userDefined5Value = match[1];
+                    } else {
+                        userDefined5Value = "default";
                     }
                 }
             }
@@ -264,6 +353,11 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 log("---- logFile: \t" + source);
                 log("---- OS Process: \t" + childProcessID);
                 log("---- EventText: \t" + msg);
+                log("---- UserDefined1: \t" + userDefined1Value);
+                log("---- UserDefined2: \t" + userDefined2Value);
+                log("---- UserDefined3: \t" + userDefined3Value);
+                log("---- UserDefined4: \t" + userDefined4Value);
+                log("---- UserDefined5: \t" + userDefined5Value);
                 log("\n");
             }
             if (enableTrapSend) {

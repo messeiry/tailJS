@@ -17,7 +17,12 @@
           "elementNameRegex": "default:10.10.10.50",
           "instanceNameRegex": "\\s*\\w+\\s*(\\w+).*",
           "classNameRegex": "default:Process",
-          "severityRegex": "default:Critical"
+          "severityRegex": "default:Critical",
+          "userDefined1Regex": "(?:[ \\t]*[\\w\\?:\\.]+){8}[ \\t]*(.*)",
+          "userDefined2Regex": "default: user def 2 val",
+          "userDefined3Regex": "",
+          "userDefined4Regex": "",
+          "userDefined5Regex": ""
         }
       ]
     },
