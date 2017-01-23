@@ -2,8 +2,31 @@
   "ahmedhatem@localhost":
   [
     {
+      "Description": "alert_ARCDB_ORA_Errors",
+      "command" : "tail -F -n 1000 /root/alert_ARCDB.log | grep ORA",
+      "OutputEntryFormatRegex": ".+",
+      "OutputEntryFormatScope":"gm",
+      "GlobalFilterRegex": ".*?",
+      "EventMap":
+      [
+        {
+          "filterName"  : "filter_ORA",
+          "filterRegex" : ".*",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "^(ORA-[^:]+):",
+          "eventNameRegex": "defaut:event",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "default:CRM_ORA Error",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical",
+          "userDefined1Regex": "^ORA-[^:]+:(.*)",
+          "userDefined1Regex": ""
+        }
+      ]
+    },
+    {
       "Description": "Test Scipt/command 1",
-      "command" : "ps -ef | tail +2 | head",
+      "command" : "ps -ef | tail +2 | head -1",
       "OutputEntryFormatRegex": "^.+$",
       "OutputEntryFormatScope":"gm",
       "GlobalFilterRegex": ".*?",

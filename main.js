@@ -62,17 +62,23 @@ for (var key in conf) {
                 path = command.replace("tailFollowLast:", "")
                 command = "tail -F -n 1 $(ls -t " + path + " | head -n1)";
             }
+
+            // This is simply here because no one would ever dream that he needs to add this param for it to work.
+            if (command.includes("grep")){
+                command = command.replace("grep", "grep --line-buffered ");
+            }
             // This rest of the code assumes that the two values are the same. So put it back in the JSON obj.
             conf[key][i]['command'] = command;
 
             // Spawn and listen.
             var commandargs = '';
-            log("ssh " + key + " " + command + " " + commandargs );
-            var child = spawn("ssh",  [key, command]);
+            log("ssh -t " + key + " " + command + " " + commandargs );
+            var child = spawn("ssh",  ["-t", key, command]);
             log("Listening to : " + command + " Process Created with PID: " +  child.pid );
 
             child.stdout.on('data', (data)=> {
-                var serverInProcess = child.spawnargs[1].toString();
+                //log(data);
+                var serverInProcess = key;
                 var childProcesID = child.pid.toString();
                 ParseReceviedData(serverInProcess, command, data, childProcesID, logFormateRegex, logFormateScope);
             });
@@ -97,7 +103,7 @@ function ParseReceviedData(serverInProcess, command, data, childProcesID, logFor
             // exclude all notification that is not matching the GlobalRegex
             if (GlobalFilterRegex.test(data)) {
                 // only executes when a GlobalRegex is matching the data comming.
-                //console.log("Recieved Log Message from server matching Global RegEx=" + serverInProcess + "\t processID = " + childProcesID + "\t from logfile:" + fileInProcess + "\n" + data);
+                //console.log("Recieved Log Message from server matching Global RegEx=" + serverInProcess + "\t processID = " + childProcesID + "\t from logfile:" + command + "\n" + data);
 
                 DetectBatchMessages(data, EventMap, command, childProcesID, serverInProcess, logFormateRegex, logFormateScope);
                 // Commented to handle multiple lines
