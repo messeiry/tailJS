@@ -34,7 +34,7 @@ each entry is for a server in the format User@ServerIP
 then another nested loop for the nested log files within a server. this process is where a process is created to listen to log files.
 the command used in listening to processes is the same for all the files.
 
-the following command should return the last changed files however when it's called from ssh directly it's returning an error accessing teh files. 
+the following command should return the last changed files however when it's called from ssh directly it's returning an error accessing teh files.
 tail -F -n 1 $(ls -t /var/log/NodeJsTest2* | head -n1)
 this will be skipped for now. we only need this option in case we need to pass wild card characters to get the lat log.
 
@@ -47,21 +47,23 @@ Note: using * in the fileName is not recommended and most probably will not work
 for (var key in conf) {
     log("logServer:   " + key);
     for (var i=0; i < conf[key].length; i++) {
-        var logFormateRegex = conf[key][i]['OutputEntryFormatRegex'];
-        var logFormateScope = conf[key][i]['OutputEntryFormatScope'];
-        var command = conf[key][i]['command'];
 
-        var commandargs = '';
-        log("ssh " + key + " " + command + " " + commandargs );
-        var child = spawn("ssh",  [key, command]);
-        log("Listening to : " + command + " Process Created with PID: " +  child.pid );
+        (function(i){
+            var logFormateRegex = conf[key][i]['OutputEntryFormatRegex'];
+            var logFormateScope = conf[key][i]['OutputEntryFormatScope'];
+            var command = conf[key][i]['command'];
 
-        child.stdout.on('data', function(data) {
-            var serverInProcess = child.spawnargs[1].toString();
-            var childProcesID = child.pid.toString();
-            ParseReceviedData(serverInProcess, command, data, childProcesID, logFormateRegex, logFormateScope);
-        });
+            var commandargs = '';
+            log("ssh " + key + " " + command + " " + commandargs );
+            var child = spawn("ssh",  [key, command]);
+            log("Listening to : " + command + " Process Created with PID: " +  child.pid );
 
+            child.stdout.on('data', (data)=> {
+                var serverInProcess = child.spawnargs[1].toString();
+                var childProcesID = child.pid.toString();
+                ParseReceviedData(serverInProcess, command, data, childProcesID, logFormateRegex, logFormateScope);
+            });
+        })(i);
     }
 
 }
@@ -131,7 +133,6 @@ function DetectBatchMessages(data, EventMap, command, childProcesID, serverInPro
 function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess) {
     var instanceNameRegex;
     var severityRegex;
-    var severityRegex;
     var classNameRegex;
     var elementNameRegex;
     var filterName;
@@ -149,6 +150,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
         severityRegex = EventMap[i]["severityRegex"];
         var timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue = "";
 
+        //log(msg);
         msg = msg.toString().replace(/\n/g, "");
 
         // if the message is matching the regex then its gonna be parsed and will create a notification

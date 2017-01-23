@@ -2,6 +2,26 @@
   "ahmedhatem@localhost":
   [
     {
+      "Description": "Test Scipt/command 1",
+      "command" : "ps -ef | head",
+      "OutputEntryFormatRegex": "^.*$",
+      "OutputEntryFormatScope":"gm",
+      "GlobalFilterRegex": ".*?",
+      "EventMap":
+      [
+        {
+          "filterName"  : "ProcessFinder",
+          "filterRegex" : ".*",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:ProcessFound",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "\\s*\\w+\\s*(\\w+).*",
+          "classNameRegex": "default:Process",
+          "severityRegex": "default:Critical"
+        }
+      ]
+    },
+    {
       "Description": "EMC Smarts Logs Formate Sample",
       "command" : "tail -F -n 1 $(ls -t /root/NodeJsTest2* | head -n1)",
       "command" : "tail -F -n 1 /root/SmartsSamplelogs.log",
@@ -80,7 +100,7 @@
           "classNameRegex": "default:SoftwareService",
           "severityRegex": "default:Critical"
         },
-                {
+        {
           "filterName"  : "filter_ERROR_MQ_0006_DCPSoapHandler",
           "filterRegex" : "Exception DCPSoapHandler",
           "timeStampRegex": "default:now",
@@ -112,6 +132,5 @@
         }
       ]
     }
-
   ]
 }
