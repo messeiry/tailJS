@@ -110,6 +110,36 @@
           "severityRegex": "default:Critical"
         }
       ]
+    },
+    {
+      "fileName": "/var/log/ICMS_ALEPO_PLYS_Alepo_*_.log",
+      "fileDescription": "BEC12-ENCX-V43_ICMS_ALEPO_Alepo_err__",
+      "logFormateRegex": "^(_\\d{1,8}_\\w+)\\s*(.*(?:\r?\n(?!_\\d{1,8}_\\w+).*)*)",
+      "logFormateScope":"gm",
+      "GlobalFilterRegex": ".*?",
+      "EventMap":
+      [
+        {
+          "filterName"  : "filter_ERROR_MQ_0006_connection_refused",
+          "filterRegex" : "Exception ServiceConnection",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:CriticalSymptom",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "default:CRM_ApplicationService",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical"
+        },
+                {
+          "filterName"  : "filter_ERROR_MQ_0006_DCPSoapHandler",
+          "filterRegex" : "Exception DCPSoapHandler",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:CriticalSymptom",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "default:CRM_ApplicationService",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical"
+        }
+      ]
     }
 
   ]

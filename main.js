@@ -1,21 +1,41 @@
-//  Developed and Designed by : Mohamed ELMesseiry @ 2016
-//  m.messeiry@gmail.com
+/*
+APPLICATION NAME:       tailJS
+DEVELOLPED BY:          MOHAMED ELMESSEIRY, m.messeiry@gmail.com
+APP TRACKING AND URL:   https://github.com/messeiry/tailJS/
+ABOUT THE APPLICATION: 
+- the application is utilizing the nodejs spawn lib to ssh and tail log files existing at remote locations
+- the remote system should have password less authentication with the server executing the script
+- the app tails logs and filter based on multiple criteria then use the output to generate SNMP to external system
 
+FEATURES:
+- the app gets the latest updated file of a configuration file using ls search criteria
+    for example: /var/log/ICMS_ALEPO_PLYS_Alepo_*_.log will refer to /var/log/ICMS_ALEPO_PLYS_Alepo_20161213_.log instead of /var/log/ICMS_ALEPO_PLYS_Alepo_20161212_.log
+- the app handels file rotations as long the file stays with the same name.
+    note: in case file changes names the file definition in the log file should refelect teh naming criteria and each time the app is executed it will get the latest
+- the app handels bulk inserts in log files. where applications that write logs dump multiple log entries at once. for that the log format should be stated in RegEX at conf file
+- the app handles multiple lines in the same log entry. for that the log format should be stated in RegEX at conf file.
+
+USEFULL COMMANDS: 
+- get the processes running tail to kill for troublshooting purposes:
+    ps aux | grep -i "tail" | awk '{print "kill -9 " $2}'
+*/
+
+// Includes
 var cproc = require('child_process');
 var spawn = cproc.spawn;
 var snmp = require ("net-snmp");
 var fs = require('fs');
 
+// logs to be monitored configuration file
 var confFile = fs.readFileSync("conf.json");
 var conf = JSON.parse(confFile);
 
-
-/*
-* SNMP Trap Generator
-*/
-var enableTrapSend = true;
+// logging details for console
 var enableConsoleLog = true;
+var debug = false ;
 
+// SNMP Trap Generator Configurations
+var enableTrapSend = true;
 var snmpTrapServer = "10.10.10.50";
 var snmpCommunity = "public";
 var enterpriseOid = "1.3.6.1.4.1.2000.0.0.7.1";
@@ -28,72 +48,75 @@ var options = {
     version: snmp.Version2c
 };
 
-/*
-loop for every entry in the conf.json file
-each entry is for a server in the foirmate User@ServerIP
-then another nested loop for the nested log files within a server. this process is where a process is created to listen to log files.
-the command used in listening to processes is the same for all the files.
-
-the following command should return the last changed files however when it's called from ssh directly it's returning an error accessing teh files. 
-tail -F -n 1 $(ls -t /var/log/NodeJsTest2* | head -n1)
-this will be skipped for now. we only need this option in case we need to pass wild card characters to get the lat log.
-
-Note: using * in the fileName is not recommended and most probably will not work, the app is design to tail one single file at a time.
-*/
-
-
 
 
 for (var key in conf) {
-    log("logServer:   " + key);
-    for (var i=0; i < conf[key].length; i++) {
-        var fileName = conf[key][i]['fileName'];
+	for (var i=0; i < conf[key].length; i++) {
+        var conffileName = conf[key][i]['fileName'];
         var fileDescription = conf[key][i]['fileDescription'];
         var logFormateRegex = conf[key][i]['logFormateRegex'];
         var logFormateScope = conf[key][i]['logFormateScope'];
+		var GlobalFilterRegex = conf[key][i]['GlobalFilterRegex'];
 
-        var commandargs = '';
-        log("ssh " + key + " tail -F -n 1 " + fileName + " " + commandargs );
-        var child = spawn("ssh",  [key, "tail -F -n 1 ", fileName ,commandargs]);
-        log("Listening to : " + fileName + " Process Created with PID: " +  child.pid );
+		var EventMap = conf[key][i]['EventMap'];
 
-        ParseRecievedLog(child, logFormateRegex, logFormateScope);
+        var fileName = "";
+        
+        if (debug)
+        	log("checking file name " + conffileName);
+
+        var checkFile = spawn("ssh", [key, "ls -t "+conffileName+ "| head -n 1"]);
+
+        checkFiles(key, checkFile, logFormateRegex, logFormateScope, conffileName, fileDescription, GlobalFilterRegex, EventMap);
+
+
     }
-
 }
 
 
-function ParseRecievedLog(child, logFormateRegex, logFormateScope){
-        child.stdout.on('data', function(data) {
+function checkFiles(key, checkFile, logFormateRegex, logFormateScope, conffileName, fileDescription, GlobalFilterRegex, EventMap) {
+	"use strict";
 
-            var serverInProcess = child.spawnargs[1].toString();
-            var childProcesID = child.pid.toString();
-            var fileInProcess = child.spawnargs[3].toString();
+	checkFile.stderr.on('data', function(data) {
+    	if (debug)
+      		log('Error finding log file: ' + data);
+    })
 
-            // loop in all log files of teh same server and stop at the log file where a process id is receiving a message
-            for (i=0; i< conf[serverInProcess].length; i++) {
-                if (fileInProcess === conf[serverInProcess][i]["fileName"]) {
-                    // extract the configuration for mapping the messages in this file
+	checkFile.stdout.on('data', function(data) {
+    	fileName = data.toString().replace(/\n/g,"");
+		if (enableConsoleLog) {
+			log("Connected and Tailing:\t" + key.toString() + "\t" +  fileDescription +  "\t"  + fileName);
+		}
+      	if (debug)
+      		log('log file found: ' + fileName);
+      
+      // create another spawn for tailing the file
+      var child = spawn("ssh",  [key, "tail -F -n 1", fileName]);
 
-                    var GlobalFilterRegex = new RegExp(conf[serverInProcess][i]["GlobalFilterRegex"], "g");
-                    var EventMap =  conf[serverInProcess][i]["EventMap"];
+      child.stdout.on('data', function(data) { 
+		var serverInProcess = child.spawnargs[1].toString();
+        var childProcesID = child.pid.toString();
+        var fileInProcess = child.spawnargs[3].toString();
 
-                    // exclude all notification that is not matching the GlobalRegex
-                    if (GlobalFilterRegex.test(data)) {
-                        // only executes when a GlobalRegex is matching the data comming.
-                        //console.log("Recieved Log Message from server matching Global RegEx=" + serverInProcess + "\t processID = " + childProcesID + "\t from logfile:" + fileInProcess + "\n" + data);
+        let globalRegex = new RegExp(GlobalFilterRegex, "g");
 
-                        DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serverInProcess, logFormateRegex, logFormateScope);
-                        // Commented to handle multiple lines
-                        //Evaluatemessage(data, EventMap, fileInProcess, childProcesID, serverInProcess);
-                    }
-                }
+        if (globalRegex.test(data)) {
+        	if (debug)
+   		        log("Global filter matched for log::" + "\t" + serverInProcess + "\tPID:" + childProcesID + "\tfileInProcess:" + fileInProcess + "\tExtractedfileName:" + fileName + "\tconffileName:" + conffileName + "\tlogFormateRegex" + logFormateRegex + "\tlogFormateScope:" + logFormateScope + "\tGlobalFilterRegex:" + GlobalFilterRegex + "\tEventMap:" + EventMap);
+       			
+			DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serverInProcess, logFormateRegex, logFormateScope);
+        } else {
+        	if (debug)
+        		log("log entry not matching global filter detected");
+        }
 
-            }
 
-        });
+
+      });
+      
+
+    })
 }
-
 
 
 /*
@@ -131,7 +154,9 @@ function DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serve
 
 }
 
+
 function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess) {
+	
     var instanceNameRegex;
     var severityRegex;
     var severityRegex;
@@ -141,7 +166,8 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
     var filterRegex;
     var timeStampRegex;
     var eventNameRegex;
-    for (var i = 0; i < EventMap.length; i++) {
+
+    for (var i = 0; i < EventMap.length; i++) {        
         filterName = EventMap[i]["filterName"];
         filterRegex = EventMap[i]["filterRegex"];
         timeStampRegex = EventMap[i]["timeStampRegex"];
@@ -252,20 +278,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
 
 
             if (enableConsoleLog) {
-
-                log("<--- Notification Recieved ---<");
-                log("---- TimeStamp: \t" + timeStampValue);
-                log("---- EventName: \t" + eventNameValue);
-                log("---- ElementName: \t" + elementNameValue);
-                log("---- InstanceName: \t" + instanceNameValue);
-                log("---- ClassName: \t" + classNameValue);
-                log("---- SeverityName: \t" + severityValue);
-                log("---- EventSource: \t" + serverInProcess);
-                log("---- filterName: \t" + filterName);
-                log("---- logFile: \t" + source);
-                log("---- OS Process: \t" + childProcessID);
-                log("---- EventText: \t" + msg);
-                log("\n");
+            	log("Notification Recieved" +"\n"+ "\t TimeStamp: \t" + timeStampValue +"\n"+ "\t EventName: \t" + eventNameValue +"\n"+ "\t ElementName: \t" + elementNameValue +"\n"+ "\t InstanceName: \t" + instanceNameValue +"\n"+ "\t ClassName: \t" + classNameValue +"\n"+ "\t SeverityName: \t" + severityValue +"\n"+ "\t EventSource: \t" + serverInProcess +"\n"+ "\t filterName: \t" + filterName +"\n"+ "\t logFile: \t" + source +"\n"+ "\t OS Process: \t" + childProcessID +"\n"+ "\t EventText: \t" + msg +"\n");
             }
             if (enableTrapSend) {
                 sendSNMPTrap(timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue, source, msg, filterName, serverInProcess);
@@ -347,15 +360,14 @@ function sendSNMPTrap(timeStampValue, eventNameValue,elementNameValue,instanceNa
             if (error)
                 console.error (error);
         });
-    log("----> SNMP Trap Sent to " + snmpTrapServer);
+
+    if (debug)
+    	log("SNMP Trap Sent to " + snmpTrapServer);
 }
-
-
 
 function log(msg) {
     console.log(new Date().toLocaleString() + " : " + msg);
 }
-
 
 
 
