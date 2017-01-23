@@ -361,7 +361,9 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 log("\n");
             }
             if (enableTrapSend) {
-                sendSNMPTrap(timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue, source, msg, filterName, serverInProcess);
+                sendSNMPTrap(timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue, source, msg, filterName, serverInProcess ,userDefined1Value ,userDefined2Value ,userDefined3Value ,userDefined4Value ,userDefined5Value);
+
+
             }
 
 
@@ -376,7 +378,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
 
 
 
-function sendSNMPTrap(timeStampValue, eventNameValue,elementNameValue,instanceNameValue,classNameValue,severityValue,source,msg, filterName, serverInProcess) {
+function sendSNMPTrap(timeStampValue, eventNameValue,elementNameValue,instanceNameValue,classNameValue,severityValue,source,msg, filterName, serverInProcess, userDefined1Value ,userDefined2Value ,userDefined3Value ,userDefined4Value ,userDefined5Value) {
     // combining the varbindsl of the trap from JSON array
     var varbinds = [
         {
@@ -428,6 +430,31 @@ function sendSNMPTrap(timeStampValue, eventNameValue,elementNameValue,instanceNa
             oid: "1.3.6.1.2.1.1.0.0.7.10",
             type: snmp.ObjectType.OctetString,
             value: source
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.11",
+            type: snmp.ObjectType.OctetString,
+            value: userDefined1Value
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.12",
+            type: snmp.ObjectType.OctetString,
+            value: userDefined2Value
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.13",
+            type: snmp.ObjectType.OctetString,
+            value: userDefined3Value
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.14",
+            type: snmp.ObjectType.OctetString,
+            value: userDefined4Value
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.15",
+            type: snmp.ObjectType.OctetString,
+            value: userDefined5Value
         }
 
     ];

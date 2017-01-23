@@ -3,7 +3,7 @@
   [
     {
       "Description": "Test Scipt/command 1",
-      "command" : "ps -ef | head",
+      "command" : "ps -ef | tail +2 | head",
       "OutputEntryFormatRegex": "^.*$",
       "OutputEntryFormatScope":"gm",
       "GlobalFilterRegex": ".*?",
