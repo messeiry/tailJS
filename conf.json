@@ -1,11 +1,12 @@
 {
-  "root@10.10.10.50":
+  "ahmedhatem@localhost":
   [
     {
-      "fileName": "/var/log/SmartsSamplelogs.log",
-      "fileDescription": "EMC Smarts Logs Formate Sample",
-      "logFormateRegex": "(\\[\\w+ \\d*, \\d{1,4} \\d*:\\d*:\\d* \\w+ \\w+ \\W\\w+]) ([^\\[]*)",
-      "logFormateScope":"g",
+      "Description": "EMC Smarts Logs Formate Sample",
+      "command" : "tail -F -n 1 $(ls -t /root/NodeJsTest2* | head -n1)",
+      "command" : "tail -F -n 1 /root/SmartsSamplelogs.log",
+      "OutputEntryFormatRegex": "(\\[\\w+ \\d*, \\d{1,4} \\d*:\\d*:\\d* \\w+ \\w+ \\W\\w+]) ([^\\[]*)",
+      "OutputEntryFormatScope":"g",
       "GlobalFilterRegex": ".*?",
       "EventMap":
       [
@@ -42,10 +43,10 @@
       ]
     },
     {
-      "fileName": "/var/log/alert_ASM1.log",
-      "fileDescription": "SEC33-E_ALERT_LOG_alert_ASM1",
-      "logFormateRegex": "^([a-z]{1,3} [a-z]{1,3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} \\d{4})\r?\n(.*(?:\r?\n(?![a-z]{1,3} [a-z]{1,3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} \\d{4}).*)*)",
-      "logFormateScope":"gmi",
+      "Description": "SEC33-E_ALERT_LOG_alert_ASM1",
+      "command" : "tail -F -n 100 /root/alert_ASM1.log",
+      "OutputEntryFormatRegex": "^([a-z]{1,3} [a-z]{1,3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} \\d{4})\r?\n(.*(?:\r?\n(?![a-z]{1,3} [a-z]{1,3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} \\d{4}).*)*)",
+      "OutputEntryFormatScope":"gmi",
       "GlobalFilterRegex": ".*?",
       "EventMap":
       [
@@ -62,10 +63,10 @@
       ]
     },
     {
-      "fileName": "/var/log/ICMS_ALEPO_PLYS_Alepo_err.log",
-      "fileDescription": "BEC12-ENCX-V43_ICMS_ALEPO_Alepo_err",
-      "logFormateRegex": "^(_\\d{1,8}_\\w+)\\s*(.*(?:\r?\n(?!_\\d{1,8}_\\w+).*)*)",
-      "logFormateScope":"gm",
+      "Description": "BEC12-ENCX-V43_ICMS_ALEPO_Alepo_err",
+      "command" : "tail -F -n 100 /root/ICMS_ALEPO_PLYS_Alepo_err.log",
+      "OutputEntryFormatRegex": "^(_\\d{1,8}_\\w+)\\s*(.*(?:\r?\n(?!_\\d{1,8}_\\w+).*)*)",
+      "OutputEntryFormatScope":"gm",
       "GlobalFilterRegex": ".*?",
       "EventMap":
       [
@@ -92,10 +93,10 @@
       ]
     },
     {
-      "fileName": "/var/log/alert_ARCDB.log",
-      "fileDescription": "alert_ARCDB_errors",
-      "logFormateRegex": "(\\w{1,3}\\s\\w{1,3}\\s\\s\\d\\s\\d{1,2}:\\d{1,2}:\\d{1,2}\\s\\d{1,4}\\s*(.*))",
-      "logFormateScope":"g",
+      "Description": "alert_ARCDB_errors",
+      "command" : "tail -F -n 100 /root/alert_ARCDB.log",
+      "OutputEntryFormatRegex": "(\\w{1,3}\\s\\w{1,3}\\s\\s\\d\\s\\d{1,2}:\\d{1,2}:\\d{1,2}\\s\\d{1,4}\\s*(.*))",
+      "OutputEntryFormatScope":"g",
       "GlobalFilterRegex": ".*?",
       "EventMap":
       [

@@ -30,7 +30,7 @@ var options = {
 
 /*
 loop for every entry in the conf.json file
-each entry is for a server in the foirmate User@ServerIP
+each entry is for a server in the format User@ServerIP
 then another nested loop for the nested log files within a server. this process is where a process is created to listen to log files.
 the command used in listening to processes is the same for all the files.
 
@@ -47,61 +47,58 @@ Note: using * in the fileName is not recommended and most probably will not work
 for (var key in conf) {
     log("logServer:   " + key);
     for (var i=0; i < conf[key].length; i++) {
-        var fileName = conf[key][i]['fileName'];
-        var fileDescription = conf[key][i]['fileDescription'];
-        var logFormateRegex = conf[key][i]['logFormateRegex'];
-        var logFormateScope = conf[key][i]['logFormateScope'];
+        var logFormateRegex = conf[key][i]['OutputEntryFormatRegex'];
+        var logFormateScope = conf[key][i]['OutputEntryFormatScope'];
+        var command = conf[key][i]['command'];
 
         var commandargs = '';
-        log("ssh " + key + " tail -F -n 1 " + fileName + " " + commandargs );
-        var child = spawn("ssh",  [key, "tail -F -n 1 ", fileName ,commandargs]);
-        log("Listening to : " + fileName + " Process Created with PID: " +  child.pid );
+        log("ssh " + key + " " + command + " " + commandargs );
+        var child = spawn("ssh",  [key, command]);
+        log("Listening to : " + command + " Process Created with PID: " +  child.pid );
 
-        ParseRecievedLog(child, logFormateRegex, logFormateScope);
+        child.stdout.on('data', function(data) {
+            var serverInProcess = child.spawnargs[1].toString();
+            var childProcesID = child.pid.toString();
+            ParseReceviedData(serverInProcess, command, data, childProcesID, logFormateRegex, logFormateScope);
+        });
+
     }
 
 }
 
+// Hack to keep running forever
+setTimeout(exitf = function(){ setTimeout(exitf, 99999999999999999); }, 99999999999999999);
 
-function ParseRecievedLog(child, logFormateRegex, logFormateScope){
-        child.stdout.on('data', function(data) {
 
-            var serverInProcess = child.spawnargs[1].toString();
-            var childProcesID = child.pid.toString();
-            var fileInProcess = child.spawnargs[3].toString();
+function ParseReceviedData(serverInProcess, command, data, childProcesID, logFormateRegex, logFormateScope) {
+// loop in all log files of teh same server and stop at the log file where a process id is receiving a message
+    for (i = 0; i < conf[serverInProcess].length; i++) {
+        if (command === conf[serverInProcess][i]["command"]) {
+            // extract the configuration for mapping the messages in this file
 
-            // loop in all log files of teh same server and stop at the log file where a process id is receiving a message
-            for (i=0; i< conf[serverInProcess].length; i++) {
-                if (fileInProcess === conf[serverInProcess][i]["fileName"]) {
-                    // extract the configuration for mapping the messages in this file
+            var GlobalFilterRegex = new RegExp(conf[serverInProcess][i]["GlobalFilterRegex"], "g");
+            var EventMap = conf[serverInProcess][i]["EventMap"];
 
-                    var GlobalFilterRegex = new RegExp(conf[serverInProcess][i]["GlobalFilterRegex"], "g");
-                    var EventMap =  conf[serverInProcess][i]["EventMap"];
+            // exclude all notification that is not matching the GlobalRegex
+            if (GlobalFilterRegex.test(data)) {
+                // only executes when a GlobalRegex is matching the data comming.
+                //console.log("Recieved Log Message from server matching Global RegEx=" + serverInProcess + "\t processID = " + childProcesID + "\t from logfile:" + fileInProcess + "\n" + data);
 
-                    // exclude all notification that is not matching the GlobalRegex
-                    if (GlobalFilterRegex.test(data)) {
-                        // only executes when a GlobalRegex is matching the data comming.
-                        //console.log("Recieved Log Message from server matching Global RegEx=" + serverInProcess + "\t processID = " + childProcesID + "\t from logfile:" + fileInProcess + "\n" + data);
-
-                        DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serverInProcess, logFormateRegex, logFormateScope);
-                        // Commented to handle multiple lines
-                        //Evaluatemessage(data, EventMap, fileInProcess, childProcesID, serverInProcess);
-                    }
-                }
-
+                DetectBatchMessages(data, EventMap, command, childProcesID, serverInProcess, logFormateRegex, logFormateScope);
+                // Commented to handle multiple lines
+                //Evaluatemessage(data, EventMap, fileInProcess, childProcesID, serverInProcess);
             }
+        }
 
-        });
+    }
 }
-
-
 
 /*
     * DetectBatchMessages is an evaluator that detect batch messages based on a regex, if the log message occures as a result of regex matching multiople times that means its a batch,
     * the regex is different from one log file to another so it needs to be re-evaluated for each case.
     *
  */
-function DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serverInProcess, logFormateRegex, logFormateScope) {
+function DetectBatchMessages(data, EventMap, command, childProcesID, serverInProcess, logFormateRegex, logFormateScope) {
     // the below line means we will use strict mode to be able to run es6 js other wise we will have to run the whole app in strict mode like this nodejs --use_strict main.js
     "use strict";
     //console.log(data.toString());
@@ -122,7 +119,7 @@ function DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serve
         m.forEach((match, groupIndex) => {
             if (groupIndex === 0) {
                 //console.log(groupIndex, match);
-                Evaluatemessage(match, EventMap, fileInProcess, childProcesID, serverInProcess);
+                Evaluatemessage(match, EventMap, command, childProcesID, serverInProcess);
             }
             //console.log(`Found match, group ${groupIndex}: ${match}`);
         });
