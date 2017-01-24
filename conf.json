@@ -51,7 +51,7 @@
     },
     {
       "Description": "EMC Smarts Logs Formate Sample",
-      "command" : "tailFollow: /root/SmartsSamplelogs.log",
+      "nixTail" : "/root/SmartsSamplelogs.log",
       "OutputEntryFormatRegex": "(\\[\\w+ \\d*, \\d{1,4} \\d*:\\d*:\\d* \\w+ \\w+ \\W\\w+]) ([^\\[]*)",
       "OutputEntryFormatScope":"g",
       "GlobalFilterRegex": ".*?",
@@ -91,7 +91,7 @@
     },
     {
       "Description": "SEC33-E_ALERT_LOG_alert_ASM1",
-      "command" : "tailFollow: /root/alert_ASM1.log",
+      "nixTail" : "/root/alert_ASM1.log",
       "OutputEntryFormatRegex": "^([a-z]{1,3} [a-z]{1,3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} \\d{4})\r?\n(.*(?:\r?\n(?![a-z]{1,3} [a-z]{1,3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} \\d{4}).*)*)",
       "OutputEntryFormatScope":"gmi",
       "GlobalFilterRegex": ".*?",
@@ -111,7 +111,7 @@
     },
     {
       "Description": "BEC12-ENCX-V43_ICMS_ALEPO_Alepo_err",
-      "command" : "tailFollow: /root/ICMS_ALEPO_PLYS_Alepo_err.log",
+      "nixTail" : "/root/ICMS_ALEPO_PLYS_Alepo_err.log",
       "OutputEntryFormatRegex": "^(_\\d{1,8}_\\w+)\\s*(.*(?:\r?\n(?!_\\d{1,8}_\\w+).*)*)",
       "OutputEntryFormatScope":"gm",
       "GlobalFilterRegex": ".*?",
@@ -141,7 +141,7 @@
     },
     {
       "Description": "alert_ARCDB_errors",
-      "command" : "tailFollowLast: /root/alert_ARCDB.log",
+      "nixTailLatest" : "/root/alert_ARCDB.log",
       "OutputEntryFormatRegex": "(\\w{1,3}\\s\\w{1,3}\\s\\s\\d\\s\\d{1,2}:\\d{1,2}:\\d{1,2}\\s\\d{1,4}\\s*(.*))",
       "OutputEntryFormatScope":"g",
       "GlobalFilterRegex": ".*?",

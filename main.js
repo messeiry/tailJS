@@ -1,6 +1,8 @@
 //  Developed and Designed by : Mohamed ELMesseiry @ 2016
 //  m.messeiry@gmail.com
 
+"use strict";
+
 var cproc = require('child_process');
 var spawn = cproc.spawn;
 var snmp = require ("net-snmp");
@@ -49,41 +51,18 @@ for (var key in conf) {
     for (var i=0; i < conf[key].length; i++) {
 
         (function(i){
-            var logFormateRegex = conf[key][i]['OutputEntryFormatRegex'];
-            var logFormateScope = conf[key][i]['OutputEntryFormatScope'];
+            let itemConf = conf[key][i];
+
+            // Get possible of actions
             var command = conf[key][i]['command'];
+            var nixTail = conf[key][i]['nixTail'];
+            var nixTailLatest = conf[key][i]['nixTailLatest'];
 
-            // Process shortcut commands.
-            if(command.startsWith("tailFollow:")){
-                command = command.replace("tailFollow:", "tail -F -n 1")
-            }
+            // Handle execution to handlers
+            if (nixTail) handleNixTail(key, nixTail, itemConf);
+            else if(nixTailLatest) handleNixTailLatest(key,  nixTailLatest, itemConf);
+            else if(command) handleLinuxCmd(key, command, itemConf);
 
-            if(command.startsWith("tailFollowLast:")){
-                path = command.replace("tailFollowLast:", "")
-                command = "ls -t " + path + " | head -1 | xargs -I % tail -f -n1000 %"
-                //command = "tail -F -n 1 $(ls -t " + path + " | head -n1)";
-                //ls -t | head -1 | xargs -I % tail -f -1 %
-            }
-
-            // This is simply here because no one would ever dream that he needs to add this param for it to work.
-            if (command.includes("grep")){
-                command = command.replace("grep", "grep --line-buffered ");
-            }
-            // This rest of the code assumes that the two values are the same. So put it back in the JSON obj.
-            conf[key][i]['command'] = command;
-
-            // Spawn and listen.
-            var commandargs = '';
-            log("ssh -t " + key + " " + command + " " + commandargs );
-            var child = spawn("ssh",  ["-t", key, command]);
-            log("Listening to : " + command + " Process Created with PID: " +  child.pid );
-
-            child.stdout.on('data', (data)=> {
-                //log(data);
-                var serverInProcess = key;
-                var childProcesID = child.pid.toString();
-                ParseReceviedData(serverInProcess, command, data, childProcesID, logFormateRegex, logFormateScope);
-            });
         })(i);
     }
 
@@ -93,10 +72,62 @@ for (var key in conf) {
 //setTimeout(exitf = function(){ setTimeout(exitf, 99999999999999999); }, 99999999999999999);
 
 
+/********************************************************************************************************/
+/****************************   Tag handlers      *******************************************************/
+/********************************************************************************************************/
+
+
+/******** Nix handlers *******/
+
+function handleLinuxCmd(key, command, itemConf){
+
+    let logFormateRegex = itemConf['OutputEntryFormatRegex'];
+    let logFormateScope = itemConf['OutputEntryFormatScope'];
+
+    // This is simply here because no one would ever dream that he needs to add this param for it to work.
+    if (command.includes("grep")){
+        command = command.replace("grep", "grep --line-buffered ");
+    }
+    // This rest of the code assumes that the two values are the same. So put it back in the JSON obj.
+    conf[key][i]['id'] = command;
+
+    // Spawn and listen.
+    var commandargs = '';
+    log("ssh -t " + key + " " + command + " " + commandargs );
+    var child = spawn("ssh",  ["-t", key, command]);
+    log("Listening to : " + command + " Process Created with PID: " +  child.pid );
+
+    child.stdout.on('data', (data)=> {
+        //log(data);
+        var serverInProcess = key;
+        var childProcesID = child.pid.toString();
+        ParseReceviedData(serverInProcess, command, data, childProcesID, logFormateRegex, logFormateScope);
+    });
+
+}
+
+function handleNixTail (key, arg, itemConf){
+    let command = "tail -F -n 1" + arg;
+    handleLinuxCmd(key, command, itemConf);
+}
+
+function handleNixTailLatest (key, arg, itemConf){
+    let command = "ls -t " + arg + " | head -1 | xargs -I % tail -f -n1000 %"
+    handleLinuxCmd(key, command, itemConf);
+}
+
+
+/******** Win handlers *******/
+
+/********************************************************************************************************/
+/**************************** DATA Processsing functions ************************************************/
+/********************************************************************************************************/
+
+
 function ParseReceviedData(serverInProcess, command, data, childProcesID, logFormateRegex, logFormateScope) {
 // loop in all log files of teh same server and stop at the log file where a process id is receiving a message
     for (i = 0; i < conf[serverInProcess].length; i++) {
-        if (command === conf[serverInProcess][i]["command"]) {
+        if (command === conf[serverInProcess][i]["id"]) {
             // extract the configuration for mapping the messages in this file
 
             var GlobalFilterRegex = new RegExp(conf[serverInProcess][i]["GlobalFilterRegex"], "g");
@@ -211,7 +242,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 if (eventNameRegex.startsWith("default:")) {
                     eventNameValue = eventNameRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(eventNameRegex, "g").exec(msg);
+                    let match = new RegExp(eventNameRegex, "g").exec(msg);
                     if (match !== null) {
                         eventNameValue = match[1];
                     } else {
@@ -226,7 +257,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 if (elementNameRegex.startsWith("default:")) {
                     elementNameValue = elementNameRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(elementNameRegex, "g").exec(msg);
+                    let match = new RegExp(elementNameRegex, "g").exec(msg);
                     if (match !== null) {
                         elementNameValue = match[1];
                     } else {
@@ -242,7 +273,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 if (instanceNameRegex.startsWith("default:")) {
                     instanceNameValue = instanceNameRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(instanceNameRegex, "g").exec(msg);
+                    let match = new RegExp(instanceNameRegex, "g").exec(msg);
                     if (match !== null) {
                         instanceNameValue = match[1];
                     } else {
@@ -258,7 +289,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 if (classNameRegex.startsWith("default:")) {
                     classNameValue = classNameRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(classNameRegex, "g").exec(msg);
+                    let match = new RegExp(classNameRegex, "g").exec(msg);
                     if (match !== null) {
                         classNameValue = match[1];
                     } else {
@@ -274,7 +305,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 if (severityRegex.startsWith("default:")) {
                     severityValue = severityRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(severityRegex, "g").exec(msg);
+                    let match = new RegExp(severityRegex, "g").exec(msg);
                     if (match !== null) {
                         severityValue = match[1];
                     } else {
@@ -290,7 +321,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 if (userDefined1Regex.startsWith("default:")) {
                     userDefined1Value = userDefined1Regex.replace("default:", "");
                 } else {
-                    match = new RegExp(userDefined1Regex, "g").exec(msg);
+                    let match = new RegExp(userDefined1Regex, "g").exec(msg);
                     if (match !== null) {
                         userDefined1Value = match[1];
                     } else {
@@ -305,7 +336,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 if (userDefined2Regex.startsWith("default:")) {
                     userDefined2Value = userDefined2Regex.replace("default:", "");
                 } else {
-                    match = new RegExp(userDefined2Regex, "g").exec(msg);
+                    let match = new RegExp(userDefined2Regex, "g").exec(msg);
                     if (match !== null) {
                         userDefined2Value = match[1];
                     } else {
@@ -320,7 +351,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 if (userDefined3Regex.startsWith("default:")) {
                     userDefined3Value = userDefined3Regex.replace("default:", "");
                 } else {
-                    match = new RegExp(userDefined3Regex, "g").exec(msg);
+                    let match = new RegExp(userDefined3Regex, "g").exec(msg);
                     if (match !== null) {
                         userDefined3Value = match[1];
                     } else {
@@ -335,7 +366,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 if (userDefined4Regex.startsWith("default:")) {
                     userDefined4Value = userDefined4Regex.replace("default:", "");
                 } else {
-                    match = new RegExp(userDefined4Regex, "g").exec(msg);
+                    let match = new RegExp(userDefined4Regex, "g").exec(msg);
                     if (match !== null) {
                         userDefined4Value = match[1];
                     } else {
@@ -350,7 +381,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 if (userDefined5Regex.startsWith("default:")) {
                     userDefined5Value = userDefined5Regex.replace("default:", "");
                 } else {
-                    match = new RegExp(userDefined5Regex, "g").exec(msg);
+                    let match = new RegExp(userDefined5Regex, "g").exec(msg);
                     if (match !== null) {
                         userDefined5Value = match[1];
                     } else {
