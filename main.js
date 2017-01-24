@@ -51,7 +51,7 @@ for (let key in conf) {
     for (let i=0; i < conf[key].length; i++) {
             let itemConf = conf[key][i];
 
-            // Get possible of actions
+            // Get possible actions
             var nixCmd = itemConf['nixCmd'];
             var nixTail = itemConf['nixTail'];
             var nixTailLatest = itemConf['nixTailLatest'];
