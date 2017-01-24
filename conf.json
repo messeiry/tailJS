@@ -26,7 +26,7 @@
     },
     {
       "Description": "Test Scipt/command 1",
-      "command" : "ps -ef | tail +2 | head -1",
+      "command" : "ps -ef | tail +2 | head -5",
       "OutputEntryFormatRegex": "^.+$",
       "OutputEntryFormatScope":"gm",
       "GlobalFilterRegex": ".*?",
@@ -51,7 +51,6 @@
     },
     {
       "Description": "EMC Smarts Logs Formate Sample",
-      "command" : "tail -F -n 1 $(ls -t /root/NodeJsTest2* | head -n1)",
       "command" : "tailFollow: /root/SmartsSamplelogs.log",
       "OutputEntryFormatRegex": "(\\[\\w+ \\d*, \\d{1,4} \\d*:\\d*:\\d* \\w+ \\w+ \\W\\w+]) ([^\\[]*)",
       "OutputEntryFormatScope":"g",

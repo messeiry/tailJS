@@ -45,7 +45,7 @@ Note: using * in the fileName is not recommended and most probably will not work
 
 
 for (var key in conf) {
-    log("logServer:   " + key);
+    log("RemoteServer:   " + key);
     for (var i=0; i < conf[key].length; i++) {
 
         (function(i){
@@ -60,7 +60,9 @@ for (var key in conf) {
 
             if(command.startsWith("tailFollowLast:")){
                 path = command.replace("tailFollowLast:", "")
-                command = "tail -F -n 1 $(ls -t " + path + " | head -n1)";
+                command = "ls -t " + path + " | head -1 | xargs -I % tail -f -n1000 %"
+                //command = "tail -F -n 1 $(ls -t " + path + " | head -n1)";
+                //ls -t | head -1 | xargs -I % tail -f -1 %
             }
 
             // This is simply here because no one would ever dream that he needs to add this param for it to work.
@@ -88,7 +90,7 @@ for (var key in conf) {
 }
 
 // Hack to keep running forever, this will be enhanced to handle the repition of execution needed for the scripts, so keep it like this for now.
-setTimeout(exitf = function(){ setTimeout(exitf, 99999999999999999); }, 99999999999999999);
+//setTimeout(exitf = function(){ setTimeout(exitf, 99999999999999999); }, 99999999999999999);
 
 
 function ParseReceviedData(serverInProcess, command, data, childProcesID, logFormateRegex, logFormateScope) {
