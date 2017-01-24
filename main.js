@@ -52,14 +52,14 @@ for (let key in conf) {
             let itemConf = conf[key][i];
 
             // Get possible of actions
-            var command = conf[key][i]['command'];
-            var nixTail = conf[key][i]['nixTail'];
-            var nixTailLatest = conf[key][i]['nixTailLatest'];
+            var nixCmd = itemConf['nixCmd'];
+            var nixTail = itemConf['nixTail'];
+            var nixTailLatest = itemConf['nixTailLatest'];
 
             // Handle execution to handlers
             if (nixTail) handleNixTail(key, nixTail, itemConf);
             else if(nixTailLatest) handleNixTailLatest(key,  nixTailLatest, itemConf);
-            else if(command) handleLinuxCmd(key, command, itemConf);
+            else if(nixCmd) handleLinuxCmd(key, nixCmd, itemConf);
     }
 
 }
@@ -98,7 +98,7 @@ function handleLinuxCmd(key, command, itemConf){
 }
 
 function handleNixTail (key, arg, itemConf){
-    let command = "tail -F -n 1" + arg;
+    let command = "tail -F -n 1000 " + arg;
     handleLinuxCmd(key, command, itemConf);
 }
 
