@@ -46,11 +46,9 @@ Note: using * in the fileName is not recommended and most probably will not work
 
 
 
-for (var key in conf) {
+for (let key in conf) {
     log("RemoteServer:   " + key);
-    for (var i=0; i < conf[key].length; i++) {
-
-        (function(i){
+    for (let i=0; i < conf[key].length; i++) {
             let itemConf = conf[key][i];
 
             // Get possible of actions
@@ -62,8 +60,6 @@ for (var key in conf) {
             if (nixTail) handleNixTail(key, nixTail, itemConf);
             else if(nixTailLatest) handleNixTailLatest(key,  nixTailLatest, itemConf);
             else if(command) handleLinuxCmd(key, command, itemConf);
-
-        })(i);
     }
 
 }
@@ -81,15 +77,10 @@ for (var key in conf) {
 
 function handleLinuxCmd(key, command, itemConf){
 
-    let logFormateRegex = itemConf['OutputEntryFormatRegex'];
-    let logFormateScope = itemConf['OutputEntryFormatScope'];
-
     // This is simply here because no one would ever dream that he needs to add this param for it to work.
     if (command.includes("grep")){
         command = command.replace("grep", "grep --line-buffered ");
     }
-    // This rest of the code assumes that the two values are the same. So put it back in the JSON obj.
-    conf[key][i]['id'] = command;
 
     // Spawn and listen.
     var commandargs = '';
@@ -101,7 +92,7 @@ function handleLinuxCmd(key, command, itemConf){
         //log(data);
         var serverInProcess = key;
         var childProcesID = child.pid.toString();
-        ParseReceviedData(serverInProcess, command, data, childProcesID, logFormateRegex, logFormateScope);
+        ParseReceviedData(serverInProcess, command, data, childProcesID, itemConf);
     });
 
 }
@@ -124,27 +115,20 @@ function handleNixTailLatest (key, arg, itemConf){
 /********************************************************************************************************/
 
 
-function ParseReceviedData(serverInProcess, command, data, childProcesID, logFormateRegex, logFormateScope) {
-// loop in all log files of teh same server and stop at the log file where a process id is receiving a message
-    for (i = 0; i < conf[serverInProcess].length; i++) {
-        if (command === conf[serverInProcess][i]["id"]) {
-            // extract the configuration for mapping the messages in this file
+function ParseReceviedData(serverInProcess, command, data, childProcesID, itemConf) {
+        let logFormateRegex = itemConf['OutputEntryFormatRegex'];
+        let logFormateScope = itemConf['OutputEntryFormatScope'];
 
-            var GlobalFilterRegex = new RegExp(conf[serverInProcess][i]["GlobalFilterRegex"], "g");
-            var EventMap = conf[serverInProcess][i]["EventMap"];
+        var GlobalFilterRegex = new RegExp(itemConf["GlobalFilterRegex"], "g");
+        var EventMap = itemConf["EventMap"];
 
-            // exclude all notification that is not matching the GlobalRegex
-            if (GlobalFilterRegex.test(data)) {
-                // only executes when a GlobalRegex is matching the data comming.
-                //console.log("Recieved Log Message from server matching Global RegEx=" + serverInProcess + "\t processID = " + childProcesID + "\t from logfile:" + command + "\n" + data);
+        // exclude all notification that is not matching the GlobalRegex
+        if (GlobalFilterRegex.test(data)) {
+            // only executes when a GlobalRegex is matching the data comming.
+            //console.log("Recieved Log Message from server matching Global RegEx=" + serverInProcess + "\t processID = " + childProcesID + "\t from logfile:" + command + "\n" + data);
 
-                DetectBatchMessages(data, EventMap, command, childProcesID, serverInProcess, logFormateRegex, logFormateScope);
-                // Commented to handle multiple lines
-                //Evaluatemessage(data, EventMap, fileInProcess, childProcesID, serverInProcess);
-            }
+            DetectBatchMessages(data, EventMap, command, childProcesID, serverInProcess, logFormateRegex, logFormateScope);
         }
-
-    }
 }
 
 /*
@@ -153,11 +137,6 @@ function ParseReceviedData(serverInProcess, command, data, childProcesID, logFor
     *
  */
 function DetectBatchMessages(data, EventMap, command, childProcesID, serverInProcess, logFormateRegex, logFormateScope) {
-    // the below line means we will use strict mode to be able to run es6 js other wise we will have to run the whole app in strict mode like this nodejs --use_strict main.js
-    "use strict";
-    //console.log(data.toString());
-    //console.log(logFormateRegex);
-    //console.log(logFormateScope);
 
     var regex = new RegExp(logFormateRegex, logFormateScope);
 
