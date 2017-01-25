@@ -1,16 +1,17 @@
-//  Developed and Designed by : Mohamed ELMesseiry @ 2016
-//  m.messeiry@gmail.com
+//  Developed and Designed by : Mohamed ELMesseiry, Ahmed Hatem @ 2016
+//  m.messeiry@gmail.com, ahhatem@gmail.com
 
 "use strict";
 
+// Imports
 var cproc = require('child_process');
 var spawn = cproc.spawn;
 var snmp = require ("net-snmp");
 var fs = require('fs');
+var schedule = require('node-schedule');
 
-var confFile = fs.readFileSync("conf.json");
-var conf = JSON.parse(confFile);
 
+var confFileName = "conf.json";
 
 /*
 * SNMP Trap Generator
@@ -44,28 +45,40 @@ Note: using * in the fileName is not recommended and most probably will not work
 */
 
 
+function main(){
+    let confFile = fs.readFileSync(confFileName);
+    let conf = JSON.parse(confFile);
 
+    for (let key in conf) {
+        log("RemoteServer:   " + key);
+        for (let i=0; i < conf[key].length; i++) {
+                let itemConf = conf[key][i];
 
-for (let key in conf) {
-    log("RemoteServer:   " + key);
-    for (let i=0; i < conf[key].length; i++) {
-            let itemConf = conf[key][i];
+                // Get possible actions
+                let nixCmd = itemConf['nixCmd'];
+                let nixTail = itemConf['nixTail'];
+                let nixTailLatest = itemConf['nixTailLatest'];
+                let cron = itemConf['cron'];
 
-            // Get possible actions
-            var nixCmd = itemConf['nixCmd'];
-            var nixTail = itemConf['nixTail'];
-            var nixTailLatest = itemConf['nixTailLatest'];
+                // Handle execution to handlers
+                if (nixTail) handleNixTail(key, nixTail, itemConf);
+                else if(nixTailLatest) handleNixTailLatest(key,  nixTailLatest, itemConf);
+                else if(nixCmd) {
+                    if (cron === "@start" || !cron) handleLinuxCmd(key, nixCmd, itemConf);
+                    schedule.scheduleJob(cron, function(){
+                        handleLinuxCmd(key, nixCmd, itemConf);
+                    });
+                }
+        }
 
-            // Handle execution to handlers
-            if (nixTail) handleNixTail(key, nixTail, itemConf);
-            else if(nixTailLatest) handleNixTailLatest(key,  nixTailLatest, itemConf);
-            else if(nixCmd) handleLinuxCmd(key, nixCmd, itemConf);
     }
 
+    // Hack to keep running forever, this will be enhanced to handle the repition of execution needed for the scripts, so keep it like this for now.
+    //setTimeout(exitf = function(){ setTimeout(exitf, 99999999999999999); }, 99999999999999999);
 }
 
-// Hack to keep running forever, this will be enhanced to handle the repition of execution needed for the scripts, so keep it like this for now.
-//setTimeout(exitf = function(){ setTimeout(exitf, 99999999999999999); }, 99999999999999999);
+main();
+
 
 
 /********************************************************************************************************/
@@ -83,27 +96,27 @@ function handleLinuxCmd(key, command, itemConf){
     }
 
     // Spawn and listen.
-    var commandargs = '';
+    let commandargs = '';
     log("ssh -t " + key + " " + command + " " + commandargs );
-    var child = spawn("ssh",  ["-t", key, command]);
+    let child = spawn("ssh",  ["-t", key, command]);
     log("Listening to : " + command + " Process Created with PID: " +  child.pid );
 
     child.stdout.on('data', (data)=> {
         //log(data);
-        var serverInProcess = key;
-        var childProcesID = child.pid.toString();
+        let serverInProcess = key;
+        let childProcesID = child.pid.toString();
         ParseReceviedData(serverInProcess, command, data, childProcesID, itemConf);
     });
 
 }
 
 function handleNixTail (key, arg, itemConf){
-    let command = "tail -F -n 1000 " + arg;
+    let command = "tail -F -n 1 " + arg;
     handleLinuxCmd(key, command, itemConf);
 }
 
 function handleNixTailLatest (key, arg, itemConf){
-    let command = "ls -t " + arg + " | head -1 | xargs -I % tail -f -n1000 %"
+    let command = "ls -t " + arg + " | head -1 | xargs -I % tail -f -n1 %"
     handleLinuxCmd(key, command, itemConf);
 }
 
@@ -119,8 +132,8 @@ function ParseReceviedData(serverInProcess, command, data, childProcesID, itemCo
         let logFormateRegex = itemConf['OutputEntryFormatRegex'];
         let logFormateScope = itemConf['OutputEntryFormatScope'];
 
-        var GlobalFilterRegex = new RegExp(itemConf["GlobalFilterRegex"], "g");
-        var EventMap = itemConf["EventMap"];
+        let GlobalFilterRegex = new RegExp(itemConf["GlobalFilterRegex"], "g");
+        let EventMap = itemConf["EventMap"];
 
         // exclude all notification that is not matching the GlobalRegex
         if (GlobalFilterRegex.test(data)) {

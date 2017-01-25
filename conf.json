@@ -4,6 +4,7 @@
     {
       "Description": "alert_ARCDB_ORA_Errors",
       "nixCmd" : "tail -F -n 1000 /root/alert_ARCDB.log | grep ORA",
+      "cron": "@start",
       "OutputEntryFormatRegex": ".+",
       "OutputEntryFormatScope":"gm",
       "GlobalFilterRegex": ".*?",
@@ -27,6 +28,7 @@
     {
       "Description": "Test Scipt/command 1",
       "nixCmd" : "ps -ef | tail +2 | head -5",
+      "cron": "* * * * *",
       "OutputEntryFormatRegex": "^.+$",
       "OutputEntryFormatScope":"gm",
       "GlobalFilterRegex": ".*?",
