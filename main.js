@@ -65,9 +65,12 @@ function main(){
                 else if(nixTailLatest) handleNixTailLatest(key,  nixTailLatest, itemConf);
                 else if(nixCmd) {
                     if (cron === "@start" || !cron) handleLinuxCmd(key, nixCmd, itemConf);
-                    schedule.scheduleJob(cron, function(){
-                        handleLinuxCmd(key, nixCmd, itemConf);
-                    });
+                    else {
+                        log("Cron created for :" + nixCmd + " with val:" + cron);
+                        schedule.scheduleJob(cron, ()=>{
+                            handleLinuxCmd(key, nixCmd, itemConf);
+                        });
+                    }
                 }
         }
 
@@ -97,9 +100,9 @@ function handleLinuxCmd(key, command, itemConf){
 
     // Spawn and listen.
     let commandargs = '';
-    log("ssh -t " + key + " " + command + " " + commandargs );
+    log("Invoking -> ssh -t " + key + " " + command + " " + commandargs );
     let child = spawn("ssh",  ["-t", key, command]);
-    log("Listening to : " + command + " Process Created with PID: " +  child.pid );
+    //log("Listening to : " + command + " Process Created with PID: " +  child.pid );
 
     child.stdout.on('data', (data)=> {
         //log(data);
