@@ -1,0 +1,16 @@
+{
+  "enableTrapSend" : true,
+  "enableConsoleLog" : true,
+  "snmpTrapServer" : "10.10.10.50",
+  "snmpCommunity" : "public",
+  "enterpriseOid" : "1.3.6.1.4.1.2000.0.0.7.1",
+  "options" : {
+    "port": 161,
+    "retries": 1,
+    "timeout": 5000,
+    "transport": "udp4",
+    "trapPort": 162
+
+  },
+  "mainConfFileName" : "conf.json"
+}

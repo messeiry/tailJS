@@ -11,25 +11,27 @@ var fs = require('fs');
 var schedule = require('node-schedule');
 
 
-var mainConfFileName = "conf.json";
 
-/*
-* SNMP Trap Generator
-*/
-var enableTrapSend = true;
-var enableConsoleLog = true;
+// Reading app.json
+let appConfFile = fs.readFileSync("app.json");
+let appConf = JSON.parse(appConfFile);
 
-var snmpTrapServer = "10.10.10.50";
-var snmpCommunity = "public";
-var enterpriseOid = "1.3.6.1.4.1.2000.0.0.7.1";
-var options = {
-    port: 161,
-    retries: 1,
-    timeout: 5000,
-    transport: "udp4",
-    trapPort: 162,
-    version: snmp.Version2c
-};
+
+// Set vars from app.json
+
+var mainConfFileName = appConf["mainConfFileName"]
+
+
+//SNMP Trap Generator
+var enableTrapSend     = appConf["enableTrapSend"];
+var enableConsoleLog   = appConf["enableConsoleLog"];
+
+var snmpTrapServer     = appConf["snmpTrapServer"];
+var snmpCommunity      = appConf["snmpCommunity"]
+var enterpriseOid      = appConf["enterpriseOid"]
+var options            = appConf["options"]
+
+options.version = snmp.Version2c;
 
 /*
 loop for every entry in the conf.json file
@@ -50,12 +52,13 @@ function main(confFileName){
     let conf = JSON.parse(confFile);
 
     for (let key in conf) {
-        log("RemoteServer:   " + key);
+        log("Processing conf for server:   " + key);
         for (let i=0; i < conf[key].length; i++) {
                 let itemConf = conf[key][i];
 
                 // Get possible actions
                 let nixCmd = itemConf['nixCmd'];
+                let WMI = itemConf['WMI'];
                 let nixTail = itemConf['nixTail'];
                 let nixTailLatest = itemConf['nixTailLatest'];
                 let cron = itemConf['cron'];
@@ -69,6 +72,15 @@ function main(confFileName){
                         log("Cron created for :" + nixCmd + " with val:" + cron);
                         schedule.scheduleJob(cron, ()=>{
                             handleLinuxCmd(key, nixCmd, itemConf);
+                        });
+                    }
+                }
+                else if(WMI) {
+                    if (cron === "@start" || !cron) handleWMI(key, nixCmd, itemConf);
+                    else {
+                        log("Cron created for :" + nixCmd + " with val:" + cron);
+                        schedule.scheduleJob(cron, ()=>{
+                            handleWMI(key, nixCmd, itemConf);
                         });
                     }
                 }
@@ -99,10 +111,16 @@ function handleLinuxCmd(key, command, itemConf){
     }
 
     // Spawn and listen.
-    let commandargs = '';
-    log("Invoking -> ssh -t " + key + " " + command + " " + commandargs );
-    let child = spawn("ssh",  ["-t", key, command]);
-    //log("Listening to : " + command + " Process Created with PID: " +  child.pid );
+    let child = null;
+
+    if (key === "local") {
+        log("Setting local command:" + command)
+        child= spawn("bash",  ["-c", command]);
+    }
+    else {
+        log("Setting remote (" + key + ")  command:" + command)
+        child= spawn("ssh",  ["-t", command]);
+    }
 
     child.stdout.on('data', (data)=> {
         //log(data);
@@ -125,6 +143,23 @@ function handleNixTailLatest (key, arg, itemConf){
 
 
 /******** Win handlers *******/
+
+function handleWMI(key, command, itemConf){
+    //wmic -U wmiuser%wmipasswd //wmi-server.localnet "select caption, name, parentprocessid, processid from win32_process"
+
+    // Spawn and listen.
+    let commandargs = '';
+    log("Invoking -> WMI " + key + " " + command + " " + commandargs );
+    let child = spawn("wmic",  ["-U" , key, command]);
+
+    child.stdout.on('data', (data)=> {
+        //log(data);
+        let serverInProcess = key;
+        let childProcesID = child.pid.toString();
+        ParseReceviedData(serverInProcess, command, data, childProcesID, itemConf);
+    });
+
+}
 
 /********************************************************************************************************/
 /**************************** DATA Processsing functions ************************************************/
@@ -388,6 +423,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
 
             if (enableConsoleLog) {
 
+                log("\n");
                 log("<--- Notification Recieved ---<");
                 log("---- TimeStamp: \t" + timeStampValue);
                 log("---- EventName: \t" + eventNameValue);
@@ -405,7 +441,6 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 log("---- UserDefined3: \t" + userDefined3Value);
                 log("---- UserDefined4: \t" + userDefined4Value);
                 log("---- UserDefined5: \t" + userDefined5Value);
-                log("\n");
             }
             if (enableTrapSend) {
                 sendSNMPTrap(timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue, source, msg, filterName, serverInProcess ,userDefined1Value ,userDefined2Value ,userDefined3Value ,userDefined4Value ,userDefined5Value);
@@ -514,7 +549,7 @@ function sendSNMPTrap(timeStampValue, eventNameValue,elementNameValue,instanceNa
             if (error)
                 console.error (error);
         });
-    log("----> SNMP Trap Sent to " + snmpTrapServer);
+    log("-------------> SNMP Trap Sent to " + snmpTrapServer);
 }
 
 
