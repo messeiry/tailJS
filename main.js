@@ -11,7 +11,7 @@ var fs = require('fs');
 var schedule = require('node-schedule');
 
 
-var confFileName = "conf.json";
+var mainConfFileName = "conf.json";
 
 /*
 * SNMP Trap Generator
@@ -45,7 +45,7 @@ Note: using * in the fileName is not recommended and most probably will not work
 */
 
 
-function main(){
+function main(confFileName){
     let confFile = fs.readFileSync(confFileName);
     let conf = JSON.parse(confFile);
 
@@ -80,7 +80,7 @@ function main(){
     //setTimeout(exitf = function(){ setTimeout(exitf, 99999999999999999); }, 99999999999999999);
 }
 
-main();
+main(mainConfFileName);
 
 
 
