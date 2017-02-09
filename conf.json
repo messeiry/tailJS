@@ -1,8 +1,8 @@
 {
-  "local":[
+  "./\\administrator%P@ssw0rd //172.16.128.137":[
     {
       "Description": "Test Scipt/command 1, LOCALLY",
-      "nixCmd" : "ps -ef | tail +2 | head -5",
+      "WMI" : "SELECT * from Win32_NTLogEvent Where Logfile = 'System'",
       "OutputEntryFormatRegex": "^.+$",
       "OutputEntryFormatScope":"gm",
       "GlobalFilterRegex": ".*?",
@@ -26,7 +26,34 @@
       ]
     }
   ],
-  "ahmedhatem@127.0.0.1":
+  "local":[
+    {
+      "Description": "Test Scipt/command 1, LOCALLY",
+      "nixCmd" : "ps -ef | tail -n +2 | head -n 1",
+      "OutputEntryFormatRegex": "^.+$",
+      "OutputEntryFormatScope":"gm",
+      "GlobalFilterRegex": ".*?",
+      "EventMap":
+      [
+        {
+          "filterName"  : "ProcessFinder",
+          "filterRegex" : ".*",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:ProcessFound",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "\\s*\\w+\\s*(\\w+).*",
+          "classNameRegex": "default:Process",
+          "severityRegex": "default:Critical",
+          "userDefined1Regex": "(?:[ \\t]*[\\w\\?:\\.]+){8}[ \\t]*(.*)",
+          "userDefined2Regex": "default: user def 2 val",
+          "userDefined3Regex": "",
+          "userDefined4Regex": "",
+          "userDefined5Regex": ""
+        }
+      ]
+    }
+  ],
+  "ahmedhatem@192.168.1.5":
   [
     {
       "Description": "alert_ARCDB_ORA_Errors",

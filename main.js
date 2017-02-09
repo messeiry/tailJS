@@ -70,17 +70,19 @@ function main(confFileName){
                     if (cron === "@start" || !cron) handleLinuxCmd(key, nixCmd, itemConf);
                     else {
                         log("Cron created for :" + nixCmd + " with val:" + cron);
+			handleLinuxCmd(key, nixCmd, itemConf);
                         schedule.scheduleJob(cron, ()=>{
                             handleLinuxCmd(key, nixCmd, itemConf);
                         });
                     }
                 }
                 else if(WMI) {
-                    if (cron === "@start" || !cron) handleWMI(key, nixCmd, itemConf);
+                    if (cron === "@start" || !cron) handleWMI(key, WMI, itemConf);
                     else {
-                        log("Cron created for :" + nixCmd + " with val:" + cron);
+                        log("Cron created for :" + WMI + " with val:" + cron);
+			handleWMI(key, WMI, itemConf);
                         schedule.scheduleJob(cron, ()=>{
-                            handleWMI(key, nixCmd, itemConf);
+                            handleWMI(key, WMI, itemConf);
                         });
                     }
                 }
@@ -119,14 +121,17 @@ function handleLinuxCmd(key, command, itemConf){
     }
     else {
         log("Setting remote (" + key + ")  command:" + command)
-        child= spawn("ssh",  ["-t", command]);
+        child= spawn("ssh",  ["-t", key,  command]);
     }
 
     child.stdout.on('data', (data)=> {
-        //log(data);
         let serverInProcess = key;
         let childProcesID = child.pid.toString();
         ParseReceviedData(serverInProcess, command, data, childProcesID, itemConf);
+    });
+
+    child.stderr.on('data', (data)=> {
+        log("ERROR: " + data);
     });
 
 }
@@ -150,7 +155,12 @@ function handleWMI(key, command, itemConf){
     // Spawn and listen.
     let commandargs = '';
     log("Invoking -> WMI " + key + " " + command + " " + commandargs );
-    let child = spawn("wmic",  ["-U" , key, command]);
+    let keyParts = key.split(" ");
+    let child = spawn("wmic",  ["-U" , keyParts[0], keyParts[1], command]);
+
+    child.stderr.on('data', (data)=> {
+        log("ERROR: " + data);
+    });
 
     child.stdout.on('data', (data)=> {
         //log(data);
