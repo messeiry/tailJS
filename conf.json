@@ -1,11 +1,88 @@
 {
-  "root@10.10.10.50":
+  "local":[
+    {
+      "Description": "Test Scipt/command 1, LOCALLY",
+      "nixCmd" : "ps -ef | tail +2 | head -5",
+      "OutputEntryFormatRegex": "^.+$",
+      "OutputEntryFormatScope":"gm",
+      "GlobalFilterRegex": ".*?",
+      "EventMap":
+      [
+        {
+          "filterName"  : "ProcessFinder",
+          "filterRegex" : ".*",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:ProcessFound",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "\\s*\\w+\\s*(\\w+).*",
+          "classNameRegex": "default:Process",
+          "severityRegex": "default:Critical",
+          "userDefined1Regex": "(?:[ \\t]*[\\w\\?:\\.]+){8}[ \\t]*(.*)",
+          "userDefined2Regex": "default: user def 2 val",
+          "userDefined3Regex": "",
+          "userDefined4Regex": "",
+          "userDefined5Regex": ""
+        }
+      ]
+    }
+  ],
+  "ahmedhatem@127.0.0.1":
   [
     {
-      "fileName": "/var/log/SmartsSamplelogs.log",
-      "fileDescription": "EMC Smarts Logs Formate Sample",
-      "logFormateRegex": "(\\[\\w+ \\d*, \\d{1,4} \\d*:\\d*:\\d* \\w+ \\w+ \\W\\w+]) ([^\\[]*)",
-      "logFormateScope":"g",
+      "Description": "alert_ARCDB_ORA_Errors",
+      "nixCmd" : "tail -F -n 1000 /root/alert_ARCDB.log | grep ORA",
+      "cron": "@start",
+      "OutputEntryFormatRegex": ".+",
+      "OutputEntryFormatScope":"gm",
+      "GlobalFilterRegex": ".*?",
+      "EventMap":
+      [
+        {
+          "filterName"  : "filter_ORA",
+          "filterRegex" : ".*",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "^(ORA-[^:]+):",
+          "eventNameRegex": "defaut:event",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "default:CRM_ORA Error",
+          "classNameRegex": "default:SoftwareService",
+          "severityRegex": "default:Critical",
+          "userDefined1Regex": "^ORA-[^:]+:(.*)",
+          "userDefined1Regex": ""
+        }
+      ]
+    },
+    {
+      "Description": "Test Scipt/command 1",
+      "nixCmd" : "ps -ef | tail +2 | head -5",
+      "cron": "* * * * *",
+      "OutputEntryFormatRegex": "^.+$",
+      "OutputEntryFormatScope":"gm",
+      "GlobalFilterRegex": ".*?",
+      "EventMap":
+      [
+        {
+          "filterName"  : "ProcessFinder",
+          "filterRegex" : ".*",
+          "timeStampRegex": "default:now",
+          "eventNameRegex": "default:ProcessFound",
+          "elementNameRegex": "default:10.10.10.50",
+          "instanceNameRegex": "\\s*\\w+\\s*(\\w+).*",
+          "classNameRegex": "default:Process",
+          "severityRegex": "default:Critical",
+          "userDefined1Regex": "(?:[ \\t]*[\\w\\?:\\.]+){8}[ \\t]*(.*)",
+          "userDefined2Regex": "default: user def 2 val",
+          "userDefined3Regex": "",
+          "userDefined4Regex": "",
+          "userDefined5Regex": ""
+        }
+      ]
+    },
+    {
+      "Description": "EMC Smarts Logs Formate Sample",
+      "nixTail" : "/root/SmartsSamplelogs.log",
+      "OutputEntryFormatRegex": "(\\[\\w+ \\d*, \\d{1,4} \\d*:\\d*:\\d* \\w+ \\w+ \\W\\w+]) ([^\\[]*)",
+      "OutputEntryFormatScope":"g",
       "GlobalFilterRegex": ".*?",
       "EventMap":
       [
@@ -42,10 +119,10 @@
       ]
     },
     {
-      "fileName": "/var/log/alert_ASM1.log",
-      "fileDescription": "SEC33-E_ALERT_LOG_alert_ASM1",
-      "logFormateRegex": "^([a-z]{1,3} [a-z]{1,3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} \\d{4})\r?\n(.*(?:\r?\n(?![a-z]{1,3} [a-z]{1,3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} \\d{4}).*)*)",
-      "logFormateScope":"gmi",
+      "Description": "SEC33-E_ALERT_LOG_alert_ASM1",
+      "nixTail" : "/root/alert_ASM1.log",
+      "OutputEntryFormatRegex": "^([a-z]{1,3} [a-z]{1,3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} \\d{4})\r?\n(.*(?:\r?\n(?![a-z]{1,3} [a-z]{1,3} \\d{1,2} \\d{1,2}:\\d{1,2}:\\d{1,2} \\d{4}).*)*)",
+      "OutputEntryFormatScope":"gmi",
       "GlobalFilterRegex": ".*?",
       "EventMap":
       [
@@ -62,10 +139,10 @@
       ]
     },
     {
-      "fileName": "/var/log/ICMS_ALEPO_PLYS_Alepo_err.log",
-      "fileDescription": "BEC12-ENCX-V43_ICMS_ALEPO_Alepo_err",
-      "logFormateRegex": "^(_\\d{1,8}_\\w+)\\s*(.*(?:\r?\n(?!_\\d{1,8}_\\w+).*)*)",
-      "logFormateScope":"gm",
+      "Description": "BEC12-ENCX-V43_ICMS_ALEPO_Alepo_err",
+      "nixTailLatest" : "/root/ICMS_ALEPO_PLYS_Alepo_err.log",
+      "OutputEntryFormatRegex": "^(_\\d{1,8}_\\w+)\\s*(.*(?:\r?\n(?!_\\d{1,8}_\\w+).*)*)",
+      "OutputEntryFormatScope":"gm",
       "GlobalFilterRegex": ".*?",
       "EventMap":
       [
@@ -79,7 +156,7 @@
           "classNameRegex": "default:SoftwareService",
           "severityRegex": "default:Critical"
         },
-                {
+        {
           "filterName"  : "filter_ERROR_MQ_0006_DCPSoapHandler",
           "filterRegex" : "Exception DCPSoapHandler",
           "timeStampRegex": "default:now",
@@ -92,10 +169,10 @@
       ]
     },
     {
-      "fileName": "/var/log/alert_ARCDB.log",
-      "fileDescription": "alert_ARCDB_errors",
-      "logFormateRegex": "(\\w{1,3}\\s\\w{1,3}\\s\\s\\d\\s\\d{1,2}:\\d{1,2}:\\d{1,2}\\s\\d{1,4}\\s*(.*))",
-      "logFormateScope":"g",
+      "Description": "alert_ARCDB_errors",
+      "nixTail" : "/root/alert_ARCDB.log",
+      "OutputEntryFormatRegex": "(\\w{1,3}\\s\\w{1,3}\\s\\s\\d\\s\\d{1,2}:\\d{1,2}:\\d{1,2}\\s\\d{1,4}\\s*(.*))",
+      "OutputEntryFormatScope":"g",
       "GlobalFilterRegex": ".*?",
       "EventMap":
       [
@@ -141,6 +218,5 @@
         }
       ]
     }
-
   ]
 }

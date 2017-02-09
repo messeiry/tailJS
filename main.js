@@ -1,135 +1,193 @@
-/*
-APPLICATION NAME:       tailJS
-DEVELOLPED BY:          MOHAMED ELMESSEIRY, m.messeiry@gmail.com
-APP TRACKING AND URL:   https://github.com/messeiry/tailJS/
-ABOUT THE APPLICATION: 
-- the application is utilizing the nodejs spawn lib to ssh and tail log files existing at remote locations
-- the remote system should have password less authentication with the server executing the script
-- the app tails logs and filter based on multiple criteria then use the output to generate SNMP to external system
+//  Developed and Designed by : Mohamed ELMesseiry, Ahmed Hatem @ 2016
+//  m.messeiry@gmail.com, ahhatem@gmail.com
 
-FEATURES:
-- the app gets the latest updated file of a configuration file using ls search criteria
-    for example: /var/log/ICMS_ALEPO_PLYS_Alepo_*_.log will refer to /var/log/ICMS_ALEPO_PLYS_Alepo_20161213_.log instead of /var/log/ICMS_ALEPO_PLYS_Alepo_20161212_.log
-- the app handels file rotations as long the file stays with the same name.
-    note: in case file changes names the file definition in the log file should refelect teh naming criteria and each time the app is executed it will get the latest
-- the app handels bulk inserts in log files. where applications that write logs dump multiple log entries at once. for that the log format should be stated in RegEX at conf file
-- the app handles multiple lines in the same log entry. for that the log format should be stated in RegEX at conf file.
+"use strict";
 
-USEFULL COMMANDS: 
-- get the processes running tail to kill for troublshooting purposes:
-    ps aux | grep -i "tail" | awk '{print "kill -9 " $2}'
-*/
-
-// Includes
+// Imports
 var cproc = require('child_process');
 var spawn = cproc.spawn;
 var snmp = require ("net-snmp");
 var fs = require('fs');
-
-// logs to be monitored configuration file
-var confFile = fs.readFileSync("conf.json");
-var conf = JSON.parse(confFile);
-
-// logging details for console
-var enableConsoleLog = true;
-var debug = false ;
-
-// SNMP Trap Generator Configurations
-var enableTrapSend = true;
-var snmpTrapServer = "10.10.10.50";
-var snmpCommunity = "public";
-var enterpriseOid = "1.3.6.1.4.1.2000.0.0.7.1";
-var options = {
-    port: 161,
-    retries: 1,
-    timeout: 5000,
-    transport: "udp4",
-    trapPort: 162,
-    version: snmp.Version2c
-};
+var schedule = require('node-schedule');
 
 
 
-for (var key in conf) {
-	for (var i=0; i < conf[key].length; i++) {
-        var conffileName = conf[key][i]['fileName'];
-        var fileDescription = conf[key][i]['fileDescription'];
-        var logFormateRegex = conf[key][i]['logFormateRegex'];
-        var logFormateScope = conf[key][i]['logFormateScope'];
-		var GlobalFilterRegex = conf[key][i]['GlobalFilterRegex'];
-
-		var EventMap = conf[key][i]['EventMap'];
-
-        var fileName = "";
-        
-        if (debug)
-        	log("checking file name " + conffileName);
-
-        var checkFile = spawn("ssh", [key, "ls -t "+conffileName+ "| head -n 1"]);
-
-        checkFiles(key, checkFile, logFormateRegex, logFormateScope, conffileName, fileDescription, GlobalFilterRegex, EventMap);
+// Reading app.json
+let appConfFile = fs.readFileSync("app.json");
+let appConf = JSON.parse(appConfFile);
 
 
-    }
-}
+// Set vars from app.json
+
+var mainConfFileName = appConf["mainConfFileName"]
 
 
-function checkFiles(key, checkFile, logFormateRegex, logFormateScope, conffileName, fileDescription, GlobalFilterRegex, EventMap) {
-	"use strict";
+//SNMP Trap Generator
+var enableTrapSend     = appConf["enableTrapSend"];
+var enableConsoleLog   = appConf["enableConsoleLog"];
 
-	checkFile.stderr.on('data', function(data) {
-    	if (debug)
-      		log('Error finding log file: ' + data);
-    })
+var snmpTrapServer     = appConf["snmpTrapServer"];
+var snmpCommunity      = appConf["snmpCommunity"]
+var enterpriseOid      = appConf["enterpriseOid"]
+var options            = appConf["options"]
 
-	checkFile.stdout.on('data', function(data) {
-    	fileName = data.toString().replace(/\n/g,"");
-		if (enableConsoleLog) {
-			log("Connected and Tailing:\t" + key.toString() + "\t" +  fileDescription +  "\t"  + fileName);
-		}
-      	if (debug)
-      		log('log file found: ' + fileName);
-      
-      // create another spawn for tailing the file
-      var child = spawn("ssh",  [key, "tail -F -n 1", fileName]);
+options.version = snmp.Version2c;
 
-      child.stdout.on('data', function(data) { 
-		var serverInProcess = child.spawnargs[1].toString();
-        var childProcesID = child.pid.toString();
-        var fileInProcess = child.spawnargs[3].toString();
+/*
+loop for every entry in the conf.json file
+each entry is for a server in the format User@ServerIP
+then another nested loop for the nested log files within a server. this process is where a process is created to listen to log files.
+the command used in listening to processes is the same for all the files.
 
-        let globalRegex = new RegExp(GlobalFilterRegex, "g");
+the following command should return the last changed files however when it's called from ssh directly it's returning an error accessing teh files.
+tail -F -n 1 $(ls -t /var/log/NodeJsTest2* | head -n1)
+this will be skipped for now. we only need this option in case we need to pass wild card characters to get the lat log.
 
-        if (globalRegex.test(data)) {
-        	if (debug)
-   		        log("Global filter matched for log::" + "\t" + serverInProcess + "\tPID:" + childProcesID + "\tfileInProcess:" + fileInProcess + "\tExtractedfileName:" + fileName + "\tconffileName:" + conffileName + "\tlogFormateRegex" + logFormateRegex + "\tlogFormateScope:" + logFormateScope + "\tGlobalFilterRegex:" + GlobalFilterRegex + "\tEventMap:" + EventMap);
-       			
-			DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serverInProcess, logFormateRegex, logFormateScope);
-        } else {
-        	if (debug)
-        		log("log entry not matching global filter detected");
+Note: using * in the fileName is not recommended and most probably will not work, the app is design to tail one single file at a time.
+*/
+
+
+function main(confFileName){
+    let confFile = fs.readFileSync(confFileName);
+    let conf = JSON.parse(confFile);
+
+    for (let key in conf) {
+        log("Processing conf for server:   " + key);
+        for (let i=0; i < conf[key].length; i++) {
+                let itemConf = conf[key][i];
+
+                // Get possible actions
+                let nixCmd = itemConf['nixCmd'];
+                let WMI = itemConf['WMI'];
+                let nixTail = itemConf['nixTail'];
+                let nixTailLatest = itemConf['nixTailLatest'];
+                let cron = itemConf['cron'];
+
+                // Handle execution to handlers
+                if (nixTail) handleNixTail(key, nixTail, itemConf);
+                else if(nixTailLatest) handleNixTailLatest(key,  nixTailLatest, itemConf);
+                else if(nixCmd) {
+                    if (cron === "@start" || !cron) handleLinuxCmd(key, nixCmd, itemConf);
+                    else {
+                        log("Cron created for :" + nixCmd + " with val:" + cron);
+                        schedule.scheduleJob(cron, ()=>{
+                            handleLinuxCmd(key, nixCmd, itemConf);
+                        });
+                    }
+                }
+                else if(WMI) {
+                    if (cron === "@start" || !cron) handleWMI(key, nixCmd, itemConf);
+                    else {
+                        log("Cron created for :" + nixCmd + " with val:" + cron);
+                        schedule.scheduleJob(cron, ()=>{
+                            handleWMI(key, nixCmd, itemConf);
+                        });
+                    }
+                }
         }
 
+    }
 
-
-      });
-      
-
-    })
+    // Hack to keep running forever, this will be enhanced to handle the repition of execution needed for the scripts, so keep it like this for now.
+    //setTimeout(exitf = function(){ setTimeout(exitf, 99999999999999999); }, 99999999999999999);
 }
 
+main(mainConfFileName);
+
+
+
+/********************************************************************************************************/
+/****************************   Tag handlers      *******************************************************/
+/********************************************************************************************************/
+
+
+/******** Nix handlers *******/
+
+function handleLinuxCmd(key, command, itemConf){
+
+    // This is simply here because no one would ever dream that he needs to add this param for it to work.
+    if (command.includes("grep")){
+        command = command.replace("grep", "grep --line-buffered ");
+    }
+
+    // Spawn and listen.
+    let child = null;
+
+    if (key === "local") {
+        log("Setting local command:" + command)
+        child= spawn("bash",  ["-c", command]);
+    }
+    else {
+        log("Setting remote (" + key + ")  command:" + command)
+        child= spawn("ssh",  ["-t", command]);
+    }
+
+    child.stdout.on('data', (data)=> {
+        //log(data);
+        let serverInProcess = key;
+        let childProcesID = child.pid.toString();
+        ParseReceviedData(serverInProcess, command, data, childProcesID, itemConf);
+    });
+
+}
+
+function handleNixTail (key, arg, itemConf){
+    let command = "tail -F -n 1 " + arg;
+    handleLinuxCmd(key, command, itemConf);
+}
+
+function handleNixTailLatest (key, arg, itemConf){
+    let command = "ls -t " + arg + " | head -1 | xargs -I % tail -f -n1 %"
+    handleLinuxCmd(key, command, itemConf);
+}
+
+
+/******** Win handlers *******/
+
+function handleWMI(key, command, itemConf){
+    //wmic -U wmiuser%wmipasswd //wmi-server.localnet "select caption, name, parentprocessid, processid from win32_process"
+
+    // Spawn and listen.
+    let commandargs = '';
+    log("Invoking -> WMI " + key + " " + command + " " + commandargs );
+    let child = spawn("wmic",  ["-U" , key, command]);
+
+    child.stdout.on('data', (data)=> {
+        //log(data);
+        let serverInProcess = key;
+        let childProcesID = child.pid.toString();
+        ParseReceviedData(serverInProcess, command, data, childProcesID, itemConf);
+    });
+
+}
+
+/********************************************************************************************************/
+/**************************** DATA Processsing functions ************************************************/
+/********************************************************************************************************/
+
+
+function ParseReceviedData(serverInProcess, command, data, childProcesID, itemConf) {
+        let logFormateRegex = itemConf['OutputEntryFormatRegex'];
+        let logFormateScope = itemConf['OutputEntryFormatScope'];
+
+        let GlobalFilterRegex = new RegExp(itemConf["GlobalFilterRegex"], "g");
+        let EventMap = itemConf["EventMap"];
+
+        // exclude all notification that is not matching the GlobalRegex
+        if (GlobalFilterRegex.test(data)) {
+            // only executes when a GlobalRegex is matching the data comming.
+            //console.log("Recieved Log Message from server matching Global RegEx=" + serverInProcess + "\t processID = " + childProcesID + "\t from logfile:" + command + "\n" + data);
+
+            DetectBatchMessages(data, EventMap, command, childProcesID, serverInProcess, logFormateRegex, logFormateScope);
+        }
+}
 
 /*
     * DetectBatchMessages is an evaluator that detect batch messages based on a regex, if the log message occures as a result of regex matching multiople times that means its a batch,
     * the regex is different from one log file to another so it needs to be re-evaluated for each case.
     *
  */
-function DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serverInProcess, logFormateRegex, logFormateScope) {
-    // the below line means we will use strict mode to be able to run es6 js other wise we will have to run the whole app in strict mode like this nodejs --use_strict main.js
-    "use strict";
-    //console.log(data.toString());
-    //console.log(logFormateRegex);
-    //console.log(logFormateScope);
+function DetectBatchMessages(data, EventMap, command, childProcesID, serverInProcess, logFormateRegex, logFormateScope) {
 
     var regex = new RegExp(logFormateRegex, logFormateScope);
 
@@ -145,7 +203,7 @@ function DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serve
         m.forEach((match, groupIndex) => {
             if (groupIndex === 0) {
                 //console.log(groupIndex, match);
-                Evaluatemessage(match, EventMap, fileInProcess, childProcesID, serverInProcess);
+                Evaluatemessage(match, EventMap, command, childProcesID, serverInProcess);
             }
             //console.log(`Found match, group ${groupIndex}: ${match}`);
         });
@@ -154,11 +212,8 @@ function DetectBatchMessages(data, EventMap, fileInProcess, childProcesID, serve
 
 }
 
-
 function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess) {
-	
     var instanceNameRegex;
-    var severityRegex;
     var severityRegex;
     var classNameRegex;
     var elementNameRegex;
@@ -166,8 +221,13 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
     var filterRegex;
     var timeStampRegex;
     var eventNameRegex;
+    var userDefined1Regex;
+    var userDefined2Regex;
+    var userDefined3Regex;
+    var userDefined4Regex;
+    var userDefined5Regex;
 
-    for (var i = 0; i < EventMap.length; i++) {        
+    for (var i = 0; i < EventMap.length; i++) {
         filterName = EventMap[i]["filterName"];
         filterRegex = EventMap[i]["filterRegex"];
         timeStampRegex = EventMap[i]["timeStampRegex"];
@@ -176,14 +236,22 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
         instanceNameRegex = EventMap[i]["instanceNameRegex"];
         classNameRegex = EventMap[i]["classNameRegex"];
         severityRegex = EventMap[i]["severityRegex"];
-        var timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue = "";
 
+        userDefined1Regex = EventMap[i]["userDefined1Regex"];
+        userDefined2Regex = EventMap[i]["userDefined2Regex"];
+        userDefined3Regex = EventMap[i]["userDefined3Regex"];
+        userDefined4Regex = EventMap[i]["userDefined4Regex"];
+        userDefined5Regex = EventMap[i]["userDefined5Regex"];
+
+        var timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue,userDefined1Value, userDefined2Value, userDefined3Value, userDefined4Value, userDefined5Value;
+
+        //log(msg);
         msg = msg.toString().replace(/\n/g, "");
 
         // if the message is matching the regex then its gonna be parsed and will create a notification
         if (new RegExp(filterRegex).test(msg)) {
 
-            if (timeStampValue === "") {
+            if (timeStampValue === "" || !timeStampRegex) {
                 timeStampValue = new Date().toLocaleString();
             } else {
                 if (timeStampRegex.startsWith("default:")) {
@@ -198,13 +266,13 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 }
             }
 
-            if (eventNameValue === "") {
+            if (eventNameValue === "" || !eventNameRegex) {
                 eventNameValue = "default";
             } else {
                 if (eventNameRegex.startsWith("default:")) {
                     eventNameValue = eventNameRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(eventNameRegex, "g").exec(msg);
+                    let match = new RegExp(eventNameRegex, "g").exec(msg);
                     if (match !== null) {
                         eventNameValue = match[1];
                     } else {
@@ -213,13 +281,13 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 }
             }
 
-            if (elementNameValue === "") {
+            if (elementNameValue === "" || !elementNameRegex) {
                 elementNameValue = "default";
             } else {
                 if (elementNameRegex.startsWith("default:")) {
                     elementNameValue = elementNameRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(elementNameRegex, "g").exec(msg);
+                    let match = new RegExp(elementNameRegex, "g").exec(msg);
                     if (match !== null) {
                         elementNameValue = match[1];
                     } else {
@@ -229,13 +297,13 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
             }
 
 
-            if (instanceNameValue === "") {
+            if (instanceNameValue === "" || !instanceNameRegex) {
                 instanceNameValue = "default";
             } else {
                 if (instanceNameRegex.startsWith("default:")) {
                     instanceNameValue = instanceNameRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(instanceNameRegex, "g").exec(msg);
+                    let match = new RegExp(instanceNameRegex, "g").exec(msg);
                     if (match !== null) {
                         instanceNameValue = match[1];
                     } else {
@@ -245,13 +313,13 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
             }
 
 
-            if (classNameValue === "") {
+            if (classNameValue === "" || !classNameRegex) {
                 classNameValue = "default";
             } else {
                 if (classNameRegex.startsWith("default:")) {
                     classNameValue = classNameRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(classNameRegex, "g").exec(msg);
+                    let match = new RegExp(classNameRegex, "g").exec(msg);
                     if (match !== null) {
                         classNameValue = match[1];
                     } else {
@@ -261,13 +329,13 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
             }
 
 
-            if (severityValue === "") {
+            if (severityValue === "" || !severityRegex) {
                 severityValue = "default";
             } else {
                 if (severityRegex.startsWith("default:")) {
                     severityValue = severityRegex.replace("default:", "");
                 } else {
-                    match = new RegExp(severityRegex, "g").exec(msg);
+                    let match = new RegExp(severityRegex, "g").exec(msg);
                     if (match !== null) {
                         severityValue = match[1];
                     } else {
@@ -276,12 +344,108 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
                 }
             }
 
+            // UserDefined vars
+            if (userDefined1Value === "" || !userDefined1Regex) {
+                userDefined1Value = "default";
+            } else {
+                if (userDefined1Regex.startsWith("default:")) {
+                    userDefined1Value = userDefined1Regex.replace("default:", "");
+                } else {
+                    let match = new RegExp(userDefined1Regex, "g").exec(msg);
+                    if (match !== null) {
+                        userDefined1Value = match[1];
+                    } else {
+                        userDefined1Value = "default";
+                    }
+                }
+            }
+
+            if (userDefined2Value === "" || !userDefined2Regex) {
+                userDefined2Value = "default";
+            } else {
+                if (userDefined2Regex.startsWith("default:")) {
+                    userDefined2Value = userDefined2Regex.replace("default:", "");
+                } else {
+                    let match = new RegExp(userDefined2Regex, "g").exec(msg);
+                    if (match !== null) {
+                        userDefined2Value = match[1];
+                    } else {
+                        userDefined2Value = "default";
+                    }
+                }
+            }
+
+            if (userDefined3Value === "" || !userDefined3Regex) {
+                userDefined3Value = "default";
+            } else {
+                if (userDefined3Regex.startsWith("default:")) {
+                    userDefined3Value = userDefined3Regex.replace("default:", "");
+                } else {
+                    let match = new RegExp(userDefined3Regex, "g").exec(msg);
+                    if (match !== null) {
+                        userDefined3Value = match[1];
+                    } else {
+                        userDefined3Value = "default";
+                    }
+                }
+            }
+
+            if (userDefined4Value === "" || !userDefined4Regex) {
+                userDefined4Value = "default";
+            } else {
+                if (userDefined4Regex.startsWith("default:")) {
+                    userDefined4Value = userDefined4Regex.replace("default:", "");
+                } else {
+                    let match = new RegExp(userDefined4Regex, "g").exec(msg);
+                    if (match !== null) {
+                        userDefined4Value = match[1];
+                    } else {
+                        userDefined4Value = "default";
+                    }
+                }
+            }
+
+            if (userDefined5Value === "" || !userDefined5Regex) {
+                userDefined5Value = "default";
+            } else {
+                if (userDefined5Regex.startsWith("default:")) {
+                    userDefined5Value = userDefined5Regex.replace("default:", "");
+                } else {
+                    let match = new RegExp(userDefined5Regex, "g").exec(msg);
+                    if (match !== null) {
+                        userDefined5Value = match[1];
+                    } else {
+                        userDefined5Value = "default";
+                    }
+                }
+            }
+
 
             if (enableConsoleLog) {
-            	log("Notification Recieved" +"\n"+ "\t TimeStamp: \t" + timeStampValue +"\n"+ "\t EventName: \t" + eventNameValue +"\n"+ "\t ElementName: \t" + elementNameValue +"\n"+ "\t InstanceName: \t" + instanceNameValue +"\n"+ "\t ClassName: \t" + classNameValue +"\n"+ "\t SeverityName: \t" + severityValue +"\n"+ "\t EventSource: \t" + serverInProcess +"\n"+ "\t filterName: \t" + filterName +"\n"+ "\t logFile: \t" + source +"\n"+ "\t OS Process: \t" + childProcessID +"\n"+ "\t EventText: \t" + msg +"\n");
+
+                log("\n");
+                log("<--- Notification Recieved ---<");
+                log("---- TimeStamp: \t" + timeStampValue);
+                log("---- EventName: \t" + eventNameValue);
+                log("---- ElementName: \t" + elementNameValue);
+                log("---- InstanceName: \t" + instanceNameValue);
+                log("---- ClassName: \t" + classNameValue);
+                log("---- SeverityName: \t" + severityValue);
+                log("---- EventSource: \t" + serverInProcess);
+                log("---- filterName: \t" + filterName);
+                log("---- logFile: \t" + source);
+                log("---- OS Process: \t" + childProcessID);
+                log("---- EventText: \t" + msg);
+                log("---- UserDefined1: \t" + userDefined1Value);
+                log("---- UserDefined2: \t" + userDefined2Value);
+                log("---- UserDefined3: \t" + userDefined3Value);
+                log("---- UserDefined4: \t" + userDefined4Value);
+                log("---- UserDefined5: \t" + userDefined5Value);
             }
             if (enableTrapSend) {
-                sendSNMPTrap(timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue, source, msg, filterName, serverInProcess);
+                sendSNMPTrap(timeStampValue, eventNameValue, elementNameValue, instanceNameValue, classNameValue, severityValue, source, msg, filterName, serverInProcess ,userDefined1Value ,userDefined2Value ,userDefined3Value ,userDefined4Value ,userDefined5Value);
+
+
             }
 
 
@@ -296,7 +460,7 @@ function Evaluatemessage(msg, EventMap, source, childProcessID, serverInProcess)
 
 
 
-function sendSNMPTrap(timeStampValue, eventNameValue,elementNameValue,instanceNameValue,classNameValue,severityValue,source,msg, filterName, serverInProcess) {
+function sendSNMPTrap(timeStampValue, eventNameValue,elementNameValue,instanceNameValue,classNameValue,severityValue,source,msg, filterName, serverInProcess, userDefined1Value ,userDefined2Value ,userDefined3Value ,userDefined4Value ,userDefined5Value) {
     // combining the varbindsl of the trap from JSON array
     var varbinds = [
         {
@@ -348,6 +512,31 @@ function sendSNMPTrap(timeStampValue, eventNameValue,elementNameValue,instanceNa
             oid: "1.3.6.1.2.1.1.0.0.7.10",
             type: snmp.ObjectType.OctetString,
             value: source
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.11",
+            type: snmp.ObjectType.OctetString,
+            value: userDefined1Value
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.12",
+            type: snmp.ObjectType.OctetString,
+            value: userDefined2Value
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.13",
+            type: snmp.ObjectType.OctetString,
+            value: userDefined3Value
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.14",
+            type: snmp.ObjectType.OctetString,
+            value: userDefined4Value
+        },
+        {
+            oid: "1.3.6.1.2.1.1.0.0.7.15",
+            type: snmp.ObjectType.OctetString,
+            value: userDefined5Value
         }
 
     ];
@@ -360,14 +549,15 @@ function sendSNMPTrap(timeStampValue, eventNameValue,elementNameValue,instanceNa
             if (error)
                 console.error (error);
         });
-
-    if (debug)
-    	log("SNMP Trap Sent to " + snmpTrapServer);
+    log("-------------> SNMP Trap Sent to " + snmpTrapServer);
 }
+
+
 
 function log(msg) {
     console.log(new Date().toLocaleString() + " : " + msg);
 }
+
 
 
 
