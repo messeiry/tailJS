@@ -12,5 +12,5 @@
     "trapPort": 162
 
   },
-  "mainConfFileName" : "conf.json"
+  "mainConfFileName" : "conf_test.json"
 }
